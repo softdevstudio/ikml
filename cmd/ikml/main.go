@@ -19,7 +19,7 @@ import (
 
 // Version is the release version. scripts/check-version.sh checks that it
 // matches the VERSION file and CHANGELOG.md.
-const Version = "0.1.1"
+const Version = "0.1.2"
 
 // Exit codes.
 const (

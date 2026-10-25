@@ -575,3 +575,31 @@ func TestWriteKMZRefusesUnsafeNames(t *testing.T) {
 		}
 	}
 }
+
+// A cleaned copy of a KMZ with duplicate and unsafe entries holds each
+// name once, with the real document as doc.kml.
+func TestCleanUnsafeKMZ(t *testing.T) {
+	d := load(t, "testdata/bad/unsafe-entries.kmz")
+	if d.MainPath != "doc.kml" {
+		t.Fatalf("main document %q", d.MainPath)
+	}
+	c, _, err := Clean(d, CleanOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := WriteKMZ(c, &buf, nil); err != nil {
+		t.Fatal(err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, f := range zr.File {
+		names = append(names, f.Name)
+	}
+	if strings.Join(names, ",") != "doc.kml,files/pin.png" {
+		t.Fatalf("cleaned KMZ holds %v", names)
+	}
+}

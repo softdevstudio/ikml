@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 (2026-10-25)
+
+Fixes from the second independent review.
+
+- A second copy of the main document (`doc.kml` twice, or `doc.kml` and
+  `./doc.kml`) is `kmz-duplicate-entry`, and cleaned or converted KMZs
+  hold it once. Names that differ only in slashes count as the same.
+- A file with an unsafe name is never chosen as the main document.
+
 ## 0.1.1 (2026-10-25)
 
 Fixes from the independent review of 0.1.0.
@@ -14,8 +23,8 @@ Fixes from the independent review of 0.1.0.
 - When bundling a .kml's files into a .kmz, a reference written with
   backslashes is checked after they are turned into slashes, so `\x\y.png`
   can't become an entry at the archive's root.
-- REFERENCE.md and `ikml codes` no longer lose element names such as
-  `<kml>` when the reference is shown as Markdown.
+- REFERENCE.md no longer loses element names such as `<kml>` when it is
+  shown as Markdown.
 - The usage text and README said OUT can be `-`; it can't, since OUT's
   extension picks the format. FILE and IN can be `-` for standard input.
 

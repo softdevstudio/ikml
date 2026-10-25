@@ -60,6 +60,9 @@ GeoJSON in and out; loss reports; browser version on WebAssembly. Released.
 `kmz-duplicate-entry`, bundling with backslashes, element names in the
 reference, the stdout claim).
 
+0.1.2 (2026-10-25): duplicate main documents and unsafe names never
+chosen as the main document (second review).
+
 ## Gaps and to-do
 
 Known gaps, not planned yet:

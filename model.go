@@ -13,7 +13,7 @@ import (
 
 // Version is the library version. It must match the VERSION file and the
 // Version constant in cmd/ikml (scripts/check-version.sh checks this).
-const Version = "0.1.1"
+const Version = "0.1.2"
 
 // Format names a file format iKML can read or write.
 type Format string

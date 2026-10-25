@@ -225,6 +225,9 @@ func openKMZ(d *Doc, data []byte) {
 			continue
 		}
 		name := strings.TrimPrefix(f.Name, "./")
+		if UnsafeEntryName(name) != "" {
+			continue // never the main document; reported below
+		}
 		if strings.EqualFold(name, "doc.kml") {
 			main = f
 			break
@@ -236,6 +239,15 @@ func openKMZ(d *Doc, data []byte) {
 		}
 	}
 	d.assetData = map[string]*zipEntry{}
+	// entryKey is how two names are compared: the same file whatever the
+	// slashes or a leading ./ say.
+	entryKey := func(n string) string {
+		return strings.TrimPrefix(strings.ReplaceAll(n, `\`, "/"), "./")
+	}
+	taken := map[string]bool{}
+	if main != nil {
+		taken[entryKey(main.Name)] = true
+	}
 	var budget int64 = MaxUncompressed
 	read := func(f *zip.File) ([]byte, error) {
 		rc, err := f.Open()
@@ -262,10 +274,11 @@ func openKMZ(d *Doc, data []byte) {
 			d.issues.add("kmz-unsafe-path", Loc{Path: f.Name}, 0, "%s %s, so unzipping the KMZ would write outside its folder. iKML leaves it out of anything it writes.", f.Name, why)
 			continue
 		}
-		if _, dup := d.assetData[name]; dup {
+		if taken[entryKey(name)] {
 			d.issues.add("kmz-duplicate-entry", Loc{Path: f.Name}, 0, "%s appears more than once in the archive. Programs differ on which copy they use; iKML keeps the first.", f.Name)
 			continue
 		}
+		taken[entryKey(name)] = true
 		d.Assets = append(d.Assets, Asset{Path: name, Size: int64(f.UncompressedSize64), Compressed: int64(f.CompressedSize64)})
 		d.assetData[name] = &zipEntry{f: f}
 	}

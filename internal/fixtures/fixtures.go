@@ -227,6 +227,8 @@ func KMZ() []KMZFile {
 			{"doc.kml", []byte(unsafeDoc)},
 			{"files/pin.png", PNG(7, 400)},
 			{"files/pin.png", PNG(8, 400)},
+			{"./doc.kml", []byte("<kml/>")},
+			{"../evil.kml", []byte("<kml/>")},
 			{"../../.bashrc", []byte("echo hello\n")},
 			{"/etc/cron.d/update", []byte("* * * * * root true\n")},
 			{`C:\Windows\System32\update.dll`, []byte("MZ")},
