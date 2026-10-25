@@ -164,8 +164,9 @@ jobs:
         run: |
           set -eux
           curl -sSfL -o /tmp/rmqa.tgz https://github.com/softdevstudio/rmqa/releases/latest/download/rmqa_linux_amd64.tar.gz || { echo "::error::could not download rmqa"; exit 1; }
-          tar -xzf /tmp/rmqa.tgz -C /tmp rmqa
-          /tmp/rmqa check dist --format github --version "${{ needs.plan.outputs.version }}"
+          mkdir -p /tmp/rmqa-bin
+          tar -xzf /tmp/rmqa.tgz -C /tmp/rmqa-bin || { echo "::error::could not unpack rmqa"; exit 1; }
+          /tmp/rmqa-bin/rmqa check dist --format github --version "${{ needs.plan.outputs.version }}"
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
