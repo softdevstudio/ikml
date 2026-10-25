@@ -1,0 +1,11 @@
+ikml.wasm bytes: 5160944
+ok   version: 0.1.0
+ok   inspect finds swapped-latlon
+ok   good file has no errors: 0
+ok   preview has shapes: 3
+ok   loss report for geojson
+ok   kmz opens: kmz
+ok   convert to geojson: mymaps-export.geojson
+ok   clean closes the ring: unclosed-ring-clean.kml
+ok   garbage gives an error, not a crash
+wasm smoke test passed

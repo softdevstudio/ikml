@@ -1,7 +1,11 @@
 package ikml
 
 import (
+	"archive/zip"
 	"bytes"
+	"crypto/sha256"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -221,10 +225,35 @@ func TestKMZFixturesMatchGenerator(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !bytes.Equal(got, f.Data()) {
-			t.Errorf("%s differs from internal/fixtures; run go run ./internal/fixturegen", f.Name)
+		// Compare what the archives hold, not their bytes: the deflate
+		// output differs between Go versions.
+		if a, b := zipContents(t, got), zipContents(t, f.Data()); a != b {
+			t.Errorf("%s differs from internal/fixtures; run go run ./internal/fixturegen\nfile:      %s\ngenerator: %s", f.Name, a, b)
 		}
 	}
+}
+
+func zipContents(t *testing.T, data []byte) string {
+	t.Helper()
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	for _, f := range zr.File {
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		fmt.Fprintf(&b, "%s:%d:%x ", f.Name, f.Method, sum[:6])
+	}
+	return b.String()
 }
 
 func TestEveryCodeDocumented(t *testing.T) {

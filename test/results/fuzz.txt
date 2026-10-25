@@ -1,0 +1,9 @@
+--- FuzzOpenKML
+fuzz: elapsed: 1m0s, execs: 557307 (0/sec), new interesting: 16 (total: 38)
+fuzz: elapsed: 1m1s, execs: 557307 (0/sec), new interesting: 16 (total: 38)
+PASS
+--- FuzzOpenKMZ
+fuzz: elapsed: 1m0s, execs: 111711 (0/sec), new interesting: 2 (total: 7)
+fuzz: elapsed: 1m1s, execs: 111711 (0/sec), new interesting: 2 (total: 7)
+PASS
+--- FuzzOpenGeoJSON
