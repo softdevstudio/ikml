@@ -342,3 +342,24 @@ unparseable-coords.kml (kml, 438 bytes)
 2 error(s), 0 warning(s), 0 note(s).
 (exit 1)
 
+$ ikml check testdata/bad/unsafe-entries.kmz
+unsafe-entries.kmz (kmz, 1.9 KiB)
+
+  ERROR   kmz-unsafe-path  ../../.bashrc
+          ../../.bashrc climbs out of the folder with .., so unzipping the KMZ
+          would write outside its folder. iKML leaves it out of anything it
+          writes.
+  ERROR   kmz-unsafe-path  /etc/cron.d/update
+          /etc/cron.d/update has an absolute path, so unzipping the KMZ would
+          write outside its folder. iKML leaves it out of anything it writes.
+  ERROR   kmz-unsafe-path  C:\Windows\System32\update.dll
+          C:\Windows\System32\update.dll has an absolute path, so unzipping the
+          KMZ would write outside its folder. iKML leaves it out of anything it
+          writes.
+  WARNING kmz-duplicate-entry  files/pin.png
+          files/pin.png appears more than once in the archive. Programs differ on
+          which copy they use; iKML keeps the first.
+
+3 error(s), 1 warning(s), 0 note(s).
+(exit 1)
+
