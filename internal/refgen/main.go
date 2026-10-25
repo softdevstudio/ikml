@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/softdevstudio/ikml"
@@ -66,4 +67,11 @@ inside the archive; write .kmz to keep them.
 `)
 }
 
-func esc(s string) string { return strings.ReplaceAll(s, "|", "\\|") }
+// tag matches an XML element name such as <kml> or <gx:coord>, which a
+// Markdown renderer would otherwise swallow as HTML.
+var tag = regexp.MustCompile(`<[A-Za-z][A-Za-z0-9:]*>`)
+
+func esc(s string) string {
+	s = tag.ReplaceAllStringFunc(s, func(t string) string { return "`" + t + "`" })
+	return strings.ReplaceAll(s, "|", "\\|")
+}

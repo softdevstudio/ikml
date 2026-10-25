@@ -72,7 +72,7 @@ ikml version                          print the version
 ```
 
 Exit status: 0 no errors, 1 errors found (or warnings with `--strict`), 2 a
-usage or read error. `OUT` can be `-` for standard output.
+usage or read error. `FILE` and `IN` can be `-` for standard input; `OUT` must be a file name, since its extension picks the format.
 
 ### inspect
 
@@ -245,7 +245,9 @@ err = ikml.WriteGeoJSON(clean, w)          // or WriteKML, WriteKMZ
 
 Standard library only. Files are read in memory with hard limits: a KMZ may
 expand to 512 MiB in total, and an entry that compresses far better than
-real data is refused as a zip bomb.
+real data is refused as a zip bomb. A file inside a KMZ whose name would
+unpack outside the folder is an error (`kmz-unsafe-path`), and iKML never
+writes such a name.
 
 ## How it was tested
 

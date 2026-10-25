@@ -27,6 +27,7 @@ warnings give 1 only with `--strict`, and info never does.
 | `polygon-no-outer` | A Polygon has no outer boundary. | Reported, not changed. |
 | `kmz-missing-asset` | The document refers to a file (icon, image, overlay, model) that should be inside the KMZ but is not there. | Reported, not changed. |
 | `local-path-ref` | A reference points to a file on the creator's computer (file:///, C:\, /Users/, /home/ and similar). Nobody else can open it. | Reported, not changed. |
+| `kmz-unsafe-path` | A file inside the KMZ has a name that would unpack outside the folder: an absolute path, a drive letter or a .. step. A KMZ from a real mapping program never has one, and some unzip tools would write the file wherever the name points. | Fixed: the entry is left out of the cleaned copy, and iKML never writes such a name. |
 | `style-missing` | A placemark uses a style (#id) that is not defined in the document. Viewers fall back to default styling. | Fixed: the broken styleUrl is removed. |
 
 ## Warnings
@@ -42,17 +43,18 @@ warnings give 1 only with `--strict`, and info never does.
 | `geojson-crs` | The GeoJSON has a "crs" member. RFC 7946 removed it, and most tools ignore it and assume WGS 84 degrees. | Fixed when the crs names WGS 84 (CRS84 or EPSG:4326): the member is removed. Other systems are left, because the coordinates would need reprojecting. |
 | `geojson-nested-collection` | A GeometryCollection contains another GeometryCollection. RFC 7946 says not to do this and many tools reject it. | Reported, not changed. |
 | `old-namespace` | The file uses the KML 2.0 or 2.1 namespace. Newer tools expect 2.2. | Fixed: the namespace is changed to KML 2.2. |
-| `no-kml-root` | The XML root is a Document, Folder or Placemark without the <kml> wrapper. | Reported, not changed. |
+| `no-kml-root` | The XML root is a Document, Folder or Placemark without the `<kml>` wrapper. | Reported, not changed. |
 | `altitude-ignored` | Positions have non-zero altitudes but the altitude mode is clampToGround (the default). Most viewers will draw them on the ground. | Reported, not changed. |
 | `large-coordinate-count` | One placemark has more than 100,000 positions. Many web maps slow down or refuse shapes this large. | Reported, not changed. |
-| `track-times-mismatch` | A gx:Track has a different number of <when> times and <gx:coord> positions. KML requires one time per position. | Reported, not changed. |
+| `track-times-mismatch` | A gx:Track has a different number of `<when>` times and `<gx:coord>` positions. KML requires one time per position. | Reported, not changed. |
+| `kmz-duplicate-entry` | The KMZ holds two files with the same name. Programs differ on which one they use. | Fixed: the first copy is kept. |
 | `duplicate-ids` | Two elements share the same id. Style references and feature lookups may pick the wrong one. | Reported, not changed. |
 
 ## Info
 
 | Code | Meaning | What `ikml clean` does |
 |---|---|---|
-| `no-namespace` | The <kml> root has no namespace. Most programs read it anyway. | Fixed: the KML 2.2 namespace is added. |
+| `no-namespace` | The `<kml>` root has no namespace. Most programs read it anyway. | Fixed: the KML 2.2 namespace is added. |
 | `remote-ref` | A reference points to an https:// address. It works online but the content is not inside the file. | Reported, not changed. |
 | `external-file-ref` | A plain .kml file refers to a file next to it on disk (for example an icon). That file must travel with the .kml. | Reported, not changed. |
 | `network-link` | The file contains a NetworkLink. Its contents load from elsewhere and are not part of this file. | Reported, not changed. |

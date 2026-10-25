@@ -44,12 +44,21 @@ update it whenever the engine changes.
   stop and report what's known and the options.
 - Issue codes are a public interface: never rename one. Add new codes to
   the table in `issues.go` and regenerate REFERENCE.md.
+- Don't push to main while a release run is going. GitHub refuses the job's
+  token when it tags a commit that's no longer main's newest one, so the
+  release must tag main's head.
+- The release checks itself with a pinned rmqa release (see release.yml).
+  Raise the pin when rmqa ships a fix that matters here.
 - Commit and push after each finished piece of work, not at the end.
 
 ## State
 
 0.1.0 (2026-10-25): inspect, check, convert, clean, codes; KML, KMZ and
-GeoJSON in and out; loss reports; browser version on WebAssembly.
+GeoJSON in and out; loss reports; browser version on WebAssembly. Released.
+
+0.1.1 (2026-10-25): fixes from the independent review (`kmz-unsafe-path`,
+`kmz-duplicate-entry`, bundling with backslashes, element names in the
+reference, the stdout claim).
 
 ## Gaps and to-do
 

@@ -258,6 +258,14 @@ func openKMZ(d *Doc, data []byte) {
 			continue
 		}
 		name := strings.TrimPrefix(f.Name, "./")
+		if why := UnsafeEntryName(name); why != "" {
+			d.issues.add("kmz-unsafe-path", Loc{Path: f.Name}, 0, "%s %s, so unzipping the KMZ would write outside its folder. iKML leaves it out of anything it writes.", f.Name, why)
+			continue
+		}
+		if _, dup := d.assetData[name]; dup {
+			d.issues.add("kmz-duplicate-entry", Loc{Path: f.Name}, 0, "%s appears more than once in the archive. Programs differ on which copy they use; iKML keeps the first.", f.Name)
+			continue
+		}
 		d.Assets = append(d.Assets, Asset{Path: name, Size: int64(f.UncompressedSize64), Compressed: int64(f.CompressedSize64)})
 		d.assetData[name] = &zipEntry{f: f}
 	}
@@ -267,6 +275,10 @@ func openKMZ(d *Doc, data []byte) {
 		return
 	}
 	d.MainPath = strings.TrimPrefix(main.Name, "./")
+	if why := UnsafeEntryName(d.MainPath); why != "" {
+		d.issues.add("kmz-unsafe-path", Loc{Path: main.Name}, 0, "%s %s, so unzipping the KMZ would write outside its folder. iKML writes it as doc.kml.", main.Name, why)
+		d.MainPath = "doc.kml"
+	}
 	b, err := read(main)
 	if err != nil {
 		if err == errTooLarge {
@@ -322,4 +334,19 @@ func humanBytes(n int64) string {
 		return fmt.Sprintf("%.1f KiB", float64(n)/(1<<10))
 	}
 	return fmt.Sprintf("%d bytes", n)
+}
+
+// UnsafeEntryName explains why a zip entry name would unpack outside the
+// folder it is unzipped into, or returns "".
+func UnsafeEntryName(name string) string {
+	n := strings.ReplaceAll(name, `\`, "/")
+	if strings.HasPrefix(n, "/") || (len(n) > 1 && n[1] == ':') {
+		return "has an absolute path"
+	}
+	for _, part := range strings.Split(n, "/") {
+		if part == ".." {
+			return "climbs out of the folder with .."
+		}
+	}
+	return ""
 }

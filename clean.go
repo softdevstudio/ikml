@@ -54,6 +54,16 @@ func Clean(d *Doc, opt CleanOptions) (*Doc, []Change, error) {
 			cl.geometry(pm, pm.Geometry, swapped[pm])
 		}
 	}
+	if d.issues != nil {
+		for _, is := range d.issues.list {
+			switch is.Code {
+			case "kmz-unsafe-path":
+				cl.add("kmz-unsafe-path", Loc{Path: is.Location}, 1, "Left out an entry whose name would unpack outside the folder.")
+			case "kmz-duplicate-entry":
+				cl.add("kmz-duplicate-entry", Loc{Path: is.Location}, 1, "Kept the first of two entries with the same name.")
+			}
+		}
+	}
 	if c.Format == FormatGeoJSON {
 		if c.HasCRS && isWGS84(c.CRSName) {
 			c.dropCRS = true

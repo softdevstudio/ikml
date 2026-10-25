@@ -282,6 +282,7 @@ func TestRoundTripRandom(t *testing.T) {
 		}
 		roundTrip(t, fmt.Sprintf("random #%d", i), d)
 	}
+	t.Logf("random round trips: %d generated KML files, KML to GeoJSON to KML, every position kept", iters)
 }
 
 func TestFormatFloatExact(t *testing.T) {
@@ -297,6 +298,7 @@ func TestFormatFloatExact(t *testing.T) {
 			t.Fatalf("%v formatted as %q does not read back", v, s)
 		}
 	}
+	t.Logf("exact numbers: 200000 random floats written and read back bit for bit")
 }
 
 func cleanOnce(t testing.TB, d *Doc, opt CleanOptions) (*Doc, []byte) {
@@ -560,5 +562,16 @@ func TestPreview(t *testing.T) {
 	}
 	if n > 2100 || n < 1000 || len(sh) != 20 {
 		t.Errorf("preview: %d shapes, %d points", len(sh), n)
+	}
+}
+
+func TestWriteKMZRefusesUnsafeNames(t *testing.T) {
+	d := load(t, "testdata/good/photo-tour.kmz")
+	for _, name := range []string{"../x.png", "/etc/x", `C:\x.dll`} {
+		var buf bytes.Buffer
+		err := WriteKMZ(d, &buf, &KMZOptions{Extra: map[string][]byte{name: []byte("x")}})
+		if err == nil {
+			t.Errorf("%s written into a KMZ", name)
+		}
 	}
 }

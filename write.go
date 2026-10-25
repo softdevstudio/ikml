@@ -530,6 +530,9 @@ func WriteKMZ(d *Doc, w io.Writer, opt *KMZOptions) error {
 	zw := zip.NewWriter(w)
 	mod := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	add := func(name string, data []byte, method uint16) error {
+		if why := UnsafeEntryName(name); why != "" {
+			return fmt.Errorf("refusing to write %s into a KMZ: it %s", name, why)
+		}
 		h := &zip.FileHeader{Name: name, Method: method, Modified: mod}
 		f, err := zw.CreateHeader(h)
 		if err != nil {

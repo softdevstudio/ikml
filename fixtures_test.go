@@ -69,6 +69,7 @@ var defects = map[string][]string{
 	"swapped-one-placemark.kml": {"swapped-latlon"},
 	"unclosed-ring.kml":         {"ring-unclosed", "ring-too-short", "line-too-short"},
 	"unparseable-coords.kml":    {"coord-parse"},
+	"unsafe-entries.kmz":        {"kmz-unsafe-path", "kmz-duplicate-entry"},
 }
 
 func TestDefectFixtures(t *testing.T) {
@@ -219,6 +220,7 @@ func TestLocationsAreSpecific(t *testing.T) {
 			if is.Location != "Placemark 'Typed in by hand'" || is.Line != 8 {
 				t.Errorf("location %q line %d", is.Location, is.Line)
 			}
+			t.Logf("swapped-one-placemark.kml: swapped-latlon at %s, line %d", is.Location, is.Line)
 			return
 		}
 	}

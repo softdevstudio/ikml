@@ -54,6 +54,7 @@ var Codes = []CodeInfo{
 	{"polygon-no-outer", SevError, "A Polygon has no outer boundary.", ""},
 	{"kmz-missing-asset", SevError, "The document refers to a file (icon, image, overlay, model) that should be inside the KMZ but is not there.", ""},
 	{"local-path-ref", SevError, "A reference points to a file on the creator's computer (file:///, C:\\, /Users/, /home/ and similar). Nobody else can open it.", ""},
+	{"kmz-unsafe-path", SevError, "A file inside the KMZ has a name that would unpack outside the folder: an absolute path, a drive letter or a .. step. A KMZ from a real mapping program never has one, and some unzip tools would write the file wherever the name points.", "Fixed: the entry is left out of the cleaned copy, and iKML never writes such a name."},
 	{"style-missing", SevError, "A placemark uses a style (#id) that is not defined in the document. Viewers fall back to default styling.", "Fixed: the broken styleUrl is removed."},
 	// Warnings
 	{"null-island", SevWarning, "A position is exactly 0,0, in the Gulf of Guinea. This is usually a missing value written as zero.", ""},
@@ -69,6 +70,7 @@ var Codes = []CodeInfo{
 	{"altitude-ignored", SevWarning, "Positions have non-zero altitudes but the altitude mode is clampToGround (the default). Most viewers will draw them on the ground.", ""},
 	{"large-coordinate-count", SevWarning, "One placemark has more than 100,000 positions. Many web maps slow down or refuse shapes this large.", ""},
 	{"track-times-mismatch", SevWarning, "A gx:Track has a different number of <when> times and <gx:coord> positions. KML requires one time per position.", ""},
+	{"kmz-duplicate-entry", SevWarning, "The KMZ holds two files with the same name. Programs differ on which one they use.", "Fixed: the first copy is kept."},
 	{"duplicate-ids", SevWarning, "Two elements share the same id. Style references and feature lookups may pick the wrong one.", ""},
 	// Info
 	{"no-namespace", SevInfo, "The <kml> root has no namespace. Most programs read it anyway.", "Fixed: the KML 2.2 namespace is added."},

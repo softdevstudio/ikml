@@ -19,7 +19,7 @@ import (
 
 // Version is the release version. scripts/check-version.sh checks that it
 // matches the VERSION file and CHANGELOG.md.
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 // Exit codes.
 const (
@@ -48,7 +48,7 @@ Usage:
   ikml version                          print the version
 
 Exit codes: 0 no errors, 1 errors found (or warnings with --strict),
-2 usage or read error. OUT can be - for standard output.
+2 usage or read error. FILE and IN can be - for standard input.
 `
 
 type opts struct {
@@ -351,11 +351,10 @@ func bundle(d *ikml.Doc, in string) map[string][]byte {
 	out := map[string][]byte{}
 	var total int64
 	for _, r := range d.Refs {
-		h := r.Href
+		h := strings.ReplaceAll(r.Href, `\`, "/")
 		if h == "" || strings.Contains(h, "://") || strings.HasPrefix(h, "/") || strings.HasPrefix(h, "#") || strings.Contains(h, "..") || strings.Contains(h, ":") {
 			continue
 		}
-		h = strings.ReplaceAll(h, `\`, "/")
 		if _, done := out[h]; done {
 			continue
 		}

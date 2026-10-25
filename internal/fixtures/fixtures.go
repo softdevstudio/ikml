@@ -223,6 +223,14 @@ func KMZ() []KMZFile {
 		{"bad", "no-kml.kmz", []Entry{
 			{"images/readme.png", PNG(6, 300)},
 		}},
+		{"bad", "unsafe-entries.kmz", []Entry{
+			{"doc.kml", []byte(unsafeDoc)},
+			{"files/pin.png", PNG(7, 400)},
+			{"files/pin.png", PNG(8, 400)},
+			{"../../.bashrc", []byte("echo hello\n")},
+			{"/etc/cron.d/update", []byte("* * * * * root true\n")},
+			{`C:\Windows\System32\update.dll`, []byte("MZ")},
+		}},
 	}
 }
 
@@ -264,3 +272,21 @@ func BigKMZ(size int) []byte {
 	entries[0].Body = doc.Bytes()
 	return Zip(entries)
 }
+
+// unsafeDoc is an ordinary document in a KMZ that also carries entries
+// whose names would unpack outside the folder.
+const unsafeDoc = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Site visit</name>
+  <Style id="pin">
+    <IconStyle><Icon><href>files/pin.png</href></Icon></IconStyle>
+  </Style>
+  <Placemark>
+    <name>Gate</name>
+    <styleUrl>#pin</styleUrl>
+    <Point><coordinates>-0.1276,51.5072</coordinates></Point>
+  </Placemark>
+</Document>
+</kml>
+`
