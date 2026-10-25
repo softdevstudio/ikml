@@ -163,7 +163,8 @@ jobs:
       - name: Check the release with rmqa
         run: |
           set -eux
-          curl -sSfL https://github.com/softdevstudio/rmqa/releases/latest/download/rmqa_linux_amd64.tar.gz | tar -xz -C /tmp rmqa
+          curl -sSfL -o /tmp/rmqa.tgz https://github.com/softdevstudio/rmqa/releases/latest/download/rmqa_linux_amd64.tar.gz || { echo "::error::could not download rmqa"; exit 1; }
+          tar -xzf /tmp/rmqa.tgz -C /tmp rmqa
           /tmp/rmqa check dist --format github --version "${{ needs.plan.outputs.version }}"
       - name: Publish the GitHub release
         env:
@@ -178,7 +179,10 @@ jobs:
           if gh release view "v$v" > out.txt 2>&1; then
             gh release upload "v$v" dist/* --clobber > out.txt 2>&1 || fail "gh release upload failed"
           else
-            gh release create "v$v" dist/* --target "${{ needs.plan.outputs.sha }}" \
+            # Tag first with git, so a refused tag shows git's own reason.
+            git tag "v$v" "${{ needs.plan.outputs.sha }}"
+            git push origin "refs/tags/v$v" > out.txt 2>&1 || fail "git push of tag v$v failed"
+            gh release create "v$v" dist/* --verify-tag \
               --title "iKML v$v" --notes-file notes.md > out.txt 2>&1 || fail "gh release create failed"
           fi
           cat out.txt
