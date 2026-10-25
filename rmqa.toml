@@ -1,0 +1,38 @@
+# The release workflow checks every iKML release with rmqa (rmqa.com)
+# against this manifest before publishing it.
+project = "ikml"
+version_file = "VERSION"
+
+[[platform]]
+os = "linux"
+arch = "amd64"
+
+[[platform]]
+os = "linux"
+arch = "arm64"
+
+[[platform]]
+os = "darwin"
+arch = "arm64"
+
+[[platform]]
+os = "darwin"
+arch = "amd64"
+
+[[platform]]
+os = "windows"
+arch = "amd64"
+
+[[artifact]]
+name = "ikml_{os}_{arch}.{archive}"
+binaries = ["ikml{exe}"]
+files = ["LICENSE", "NOTICE", "THIRD_PARTY_LICENSES.md", "README.md", "REFERENCE.md", "CHANGELOG.md"]
+run = ["version"]
+
+[[artifact]]
+name = "ikml-web.zip"
+files = ["index.html", "ikml.js", "ikml.wasm", "wasm_exec.js", "LICENSE", "NOTICE"]
+
+[[artifact]]
+name = "SHA256SUMS"
+checksums = "sha256"

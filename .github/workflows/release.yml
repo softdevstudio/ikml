@@ -1,0 +1,180 @@
+name: Release
+
+# Runs after CI finishes on main. If VERSION names a version that has no tag
+# yet, it builds ikml for Linux, macOS and Windows plus the browser version,
+# smoke-tests every build, and only then tags the commit and publishes.
+# Archive names carry no version, so releases/latest/download links never
+# change.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Rebuild the assets of an existing tag (for example v0.1.0)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      sha: ${{ steps.v.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - id: v
+        env:
+          REBUILD_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          v=$(tr -d '[:space:]' < VERSION)
+          sha=$(git rev-parse HEAD)
+          if [ -z "$REBUILD_TAG" ] && git ls-remote --exit-code --tags origin "refs/tags/v$v" >/dev/null; then
+            echo "v$v is already released; nothing to do"
+            v=""
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.version != ''
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-latest,    goos: linux,   goarch: amd64, ext: "",     archive: tar.gz, smoke: true }
+          - { os: ubuntu-24.04-arm, goos: linux,   goarch: arm64, ext: "",     archive: tar.gz, smoke: true }
+          - { os: macos-latest,     goos: darwin,  goarch: arm64, ext: "",     archive: tar.gz, smoke: true }
+          - { os: macos-latest,     goos: darwin,  goarch: amd64, ext: "",     archive: tar.gz, smoke: false }
+          - { os: windows-latest,   goos: windows, goarch: amd64, ext: ".exe", archive: zip,    smoke: true }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build
+        run: |
+          set -eux
+          mkdir -p stage
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -trimpath -ldflags "-s -w" -o stage/ikml${{ matrix.ext }} ./cmd/ikml
+          cp LICENSE NOTICE THIRD_PARTY_LICENSES.md README.md REFERENCE.md CHANGELOG.md stage/
+      - name: Smoke test
+        if: matrix.smoke
+        run: |
+          set -eux
+          b=stage/ikml${{ matrix.ext }}
+          out=$($b version | tr -d '\r')
+          [ "$out" = "ikml ${{ needs.plan.outputs.version }}" ] || { echo "::error::version printed $out"; exit 1; }
+          $b check testdata/good/mymaps-export.kml
+          set +e
+          $b check testdata/bad/swapped-latlon.kml
+          code=$?
+          set -e
+          [ $code = 1 ] || { echo "::error::expected exit 1 on a broken file, got $code"; exit 1; }
+          $b convert testdata/good/mymaps-export.kml out.geojson
+          grep -q FeatureCollection out.geojson
+          $b clean testdata/bad/unclosed-ring.kml clean.kml
+          $b inspect testdata/good/dji-mission.kmz
+      - name: Package
+        run: |
+          set -eux
+          mkdir -p dist
+          name=ikml_${{ matrix.goos }}_${{ matrix.goarch }}
+          if [ "${{ matrix.archive }}" = zip ]; then
+            (cd stage && 7z a -tzip ../dist/$name.zip * >/dev/null)
+          else
+            tar -czf dist/$name.tar.gz -C stage .
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ikml_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: dist/*
+
+  web:
+    needs: plan
+    if: needs.plan.outputs.version != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: scripts/build-wasm.sh
+      - run: node scripts/wasm-smoke.mjs
+      - name: Package
+        run: |
+          set -eux
+          mkdir -p dist stage
+          cp web/index.html web/ikml.js web/ikml.wasm web/wasm_exec.js LICENSE NOTICE THIRD_PARTY_LICENSES.md stage/
+          (cd stage && zip -qX ../dist/ikml-web.zip *)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ikml-web
+          path: dist/*
+
+  publish:
+    needs: [plan, build, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          set -eux
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      # The release is checked with rmqa (rmqa.com), the studio's release
+      # checker, before anything is tagged or published.
+      - name: Check the release with rmqa
+        run: |
+          set -eux
+          curl -sSfL https://github.com/softdevstudio/rmqa/releases/latest/download/rmqa_linux_amd64.tar.gz | tar -xz -C /tmp rmqa
+          /tmp/rmqa check dist --format github --version "${{ needs.plan.outputs.version }}"
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          v=${{ needs.plan.outputs.version }}
+          awk "/^## $v/{f=1;next} /^## /{f=0} f" CHANGELOG.md > notes.md
+          if gh release view "v$v" >/dev/null 2>&1; then
+            gh release upload "v$v" dist/* --clobber
+          else
+            gh release create "v$v" dist/* --target "${{ needs.plan.outputs.sha }}" \
+              --title "iKML v$v" --notes-file notes.md
+          fi

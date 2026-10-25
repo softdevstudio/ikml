@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-version.sh
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "::error::not gofmt-formatted: $out"; exit 1; fi
+      - run: go vet ./...
+      - name: Tests
+        run: |
+          set -o pipefail
+          go test -count=1 -race -timeout 30m ./... 2>&1 | tee test.log || {
+            grep -E -- "--- FAIL|panic:|_test.go:[0-9]+:" test.log | head -30 | sed 's/^/::error::/'
+            exit 1
+          }
+      - name: Fuzz smoke
+        run: |
+          for f in FuzzOpenKML FuzzOpenKMZ FuzzOpenGeoJSON FuzzParseCoordinates; do
+            go test -run '^$' -fuzz "^$f\$" -fuzztime 10s . || { echo "::error::$f found a crash"; exit 1; }
+          done
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: scripts/build-wasm.sh
+      - run: node scripts/wasm-smoke.mjs
