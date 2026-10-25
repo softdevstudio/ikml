@@ -1,16 +1,16 @@
 --- FuzzOpenKML
-fuzz: elapsed: 1m0s, execs: 71381 (0/sec), new interesting: 12 (total: 67)
-fuzz: elapsed: 1m1s, execs: 71381 (0/sec), new interesting: 12 (total: 67)
+fuzz: elapsed: 1m0s, execs: 571114 (0/sec), new interesting: 81 (total: 148)
+fuzz: elapsed: 1m1s, execs: 571114 (0/sec), new interesting: 81 (total: 148)
 PASS
 --- FuzzOpenKMZ
-fuzz: elapsed: 1m0s, execs: 230351 (0/sec), new interesting: 1 (total: 10)
-fuzz: elapsed: 1m1s, execs: 230351 (0/sec), new interesting: 1 (total: 10)
+fuzz: elapsed: 1m0s, execs: 402292 (0/sec), new interesting: 1 (total: 11)
+fuzz: elapsed: 1m1s, execs: 402292 (0/sec), new interesting: 1 (total: 11)
 PASS
 --- FuzzOpenGeoJSON
-fuzz: elapsed: 1m0s, execs: 562852 (0/sec), new interesting: 63 (total: 275)
-fuzz: elapsed: 1m1s, execs: 562852 (0/sec), new interesting: 63 (total: 275)
+fuzz: elapsed: 1m0s, execs: 774565 (0/sec), new interesting: 49 (total: 324)
+fuzz: elapsed: 1m1s, execs: 774565 (0/sec), new interesting: 49 (total: 324)
 PASS
 --- FuzzParseCoordinates
-fuzz: elapsed: 1m0s, execs: 506696 (0/sec), new interesting: 27 (total: 241)
-fuzz: elapsed: 1m1s, execs: 506696 (0/sec), new interesting: 27 (total: 241)
+fuzz: elapsed: 1m0s, execs: 1379197 (158853/sec), new interesting: 26 (total: 267)
+fuzz: elapsed: 1m0s, execs: 1379197 (0/sec), new interesting: 26 (total: 267)
 PASS

@@ -343,8 +343,11 @@ unparseable-coords.kml (kml, 438 bytes)
 (exit 1)
 
 $ ikml check testdata/bad/unsafe-entries.kmz
-unsafe-entries.kmz (kmz, 1.9 KiB)
+unsafe-entries.kmz (kmz, 2.2 KiB)
 
+  ERROR   kmz-unsafe-path  ../evil.kml
+          ../evil.kml climbs out of the folder with .., so unzipping the KMZ would
+          write outside its folder. iKML leaves it out of anything it writes.
   ERROR   kmz-unsafe-path  ../../.bashrc
           ../../.bashrc climbs out of the folder with .., so unzipping the KMZ
           would write outside its folder. iKML leaves it out of anything it
@@ -359,7 +362,10 @@ unsafe-entries.kmz (kmz, 1.9 KiB)
   WARNING kmz-duplicate-entry  files/pin.png
           files/pin.png appears more than once in the archive. Programs differ on
           which copy they use; iKML keeps the first.
+  WARNING kmz-duplicate-entry  ./doc.kml
+          ./doc.kml appears more than once in the archive. Programs differ on
+          which copy they use; iKML keeps the first.
 
-3 error(s), 1 warning(s), 0 note(s).
+4 error(s), 2 warning(s), 0 note(s).
 (exit 1)
 

@@ -1,6 +1,6 @@
-recorded: 2026-10-25T12:00:42Z
+recorded: 2026-10-25T12:35:55Z
 machine: Linux 6.18.44-fc-v153 x86_64
 cpus: 2
 go: go version go1.24.7 linux/amd64
 node: v22.23.4
-version: 0.1.1
+version: 0.1.2

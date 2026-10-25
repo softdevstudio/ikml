@@ -54,7 +54,7 @@
 === RUN   TestGoodFixturesHaveNoErrors/photo-tour.kmz
 === RUN   TestGoodFixturesHaveNoErrors/qgis-export.kml
 === RUN   TestGoodFixturesHaveNoErrors/timespan-extrude.kml
---- PASS: TestGoodFixturesHaveNoErrors (0.02s)
+--- PASS: TestGoodFixturesHaveNoErrors (0.01s)
     --- PASS: TestGoodFixturesHaveNoErrors/arcgis-export.kml (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/clean.geojson (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/dji-mission.kmz (0.00s)
@@ -65,7 +65,6 @@
     --- PASS: TestGoodFixturesHaveNoErrors/qgis-export.kml (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/timespan-extrude.kml (0.00s)
 === RUN   TestFixtureContents
-=== RUN   TestFixtureContents/gps-track.kml
 === RUN   TestFixtureContents/dji-mission.kmz
 === RUN   TestFixtureContents/clean.geojson
 === RUN   TestFixtureContents/photo-tour.kmz
@@ -73,8 +72,8 @@
 === RUN   TestFixtureContents/mymaps-export.kml
 === RUN   TestFixtureContents/arcgis-export.kml
 === RUN   TestFixtureContents/qgis-export.kml
+=== RUN   TestFixtureContents/gps-track.kml
 --- PASS: TestFixtureContents (0.01s)
-    --- PASS: TestFixtureContents/gps-track.kml (0.00s)
     --- PASS: TestFixtureContents/dji-mission.kmz (0.00s)
     --- PASS: TestFixtureContents/clean.geojson (0.00s)
     --- PASS: TestFixtureContents/photo-tour.kmz (0.00s)
@@ -82,13 +81,14 @@
     --- PASS: TestFixtureContents/mymaps-export.kml (0.00s)
     --- PASS: TestFixtureContents/arcgis-export.kml (0.00s)
     --- PASS: TestFixtureContents/qgis-export.kml (0.00s)
+    --- PASS: TestFixtureContents/gps-track.kml (0.00s)
 === RUN   TestSchemaTypes
 --- PASS: TestSchemaTypes (0.00s)
 === RUN   TestLocationsAreSpecific
     fixtures_test.go:223: swapped-one-placemark.kml: swapped-latlon at Placemark 'Typed in by hand', line 8
 --- PASS: TestLocationsAreSpecific (0.00s)
 === RUN   TestKMZFixturesMatchGenerator
---- PASS: TestKMZFixturesMatchGenerator (0.03s)
+--- PASS: TestKMZFixturesMatchGenerator (0.07s)
 === RUN   TestEveryCodeDocumented
 --- PASS: TestEveryCodeDocumented (0.00s)
 === RUN   TestOpenErrors
@@ -105,22 +105,24 @@
 --- PASS: TestRoundTripFixtures (0.05s)
 === RUN   TestRoundTripRandom
     roundtrip_test.go:285: random round trips: 3000 generated KML files, KML to GeoJSON to KML, every position kept
---- PASS: TestRoundTripRandom (16.74s)
+--- PASS: TestRoundTripRandom (17.11s)
 === RUN   TestFormatFloatExact
     roundtrip_test.go:301: exact numbers: 200000 random floats written and read back bit for bit
---- PASS: TestFormatFloatExact (0.58s)
+--- PASS: TestFormatFloatExact (0.55s)
 === RUN   TestCleanIdempotent
---- PASS: TestCleanIdempotent (0.37s)
+--- PASS: TestCleanIdempotent (0.42s)
 === RUN   TestCleanSpecifics
 --- PASS: TestCleanSpecifics (0.02s)
 === RUN   TestLossReport
---- PASS: TestLossReport (0.02s)
+--- PASS: TestLossReport (0.01s)
 === RUN   TestZipBomb
---- PASS: TestZipBomb (9.37s)
+--- PASS: TestZipBomb (10.15s)
 === RUN   TestPreview
---- PASS: TestPreview (0.24s)
+--- PASS: TestPreview (0.30s)
 === RUN   TestWriteKMZRefusesUnsafeNames
---- PASS: TestWriteKMZRefusesUnsafeNames (0.03s)
+--- PASS: TestWriteKMZRefusesUnsafeNames (0.04s)
+=== RUN   TestCleanUnsafeKMZ
+--- PASS: TestCleanUnsafeKMZ (0.01s)
 === RUN   FuzzOpenKML
 === RUN   FuzzOpenKML/seed#0
 === RUN   FuzzOpenKML/seed#1
@@ -180,17 +182,17 @@
 === RUN   FuzzOpenKMZ/seed#9
 === RUN   FuzzOpenKMZ/seed#10
 === RUN   FuzzOpenKMZ/seed#11
---- PASS: FuzzOpenKMZ (0.09s)
+--- PASS: FuzzOpenKMZ (0.14s)
     --- PASS: FuzzOpenKMZ/seed#0 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#1 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#2 (0.01s)
-    --- PASS: FuzzOpenKMZ/seed#3 (0.00s)
+    --- PASS: FuzzOpenKMZ/seed#3 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#4 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#5 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#6 (0.01s)
-    --- PASS: FuzzOpenKMZ/seed#7 (0.01s)
+    --- PASS: FuzzOpenKMZ/seed#7 (0.03s)
     --- PASS: FuzzOpenKMZ/seed#8 (0.01s)
-    --- PASS: FuzzOpenKMZ/seed#9 (0.00s)
+    --- PASS: FuzzOpenKMZ/seed#9 (0.02s)
     --- PASS: FuzzOpenKMZ/seed#10 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#11 (0.00s)
 === RUN   FuzzOpenGeoJSON
@@ -224,21 +226,21 @@
     --- PASS: FuzzParseCoordinates/seed#4 (0.00s)
     --- PASS: FuzzParseCoordinates/seed#5 (0.00s)
 PASS
-ok  	github.com/softdevstudio/ikml	28.687s
+ok  	github.com/softdevstudio/ikml	29.974s
 === RUN   TestVersion
 --- PASS: TestVersion (0.00s)
 === RUN   TestExitCodes
---- PASS: TestExitCodes (0.03s)
+--- PASS: TestExitCodes (0.02s)
 === RUN   TestCheckJSON
 --- PASS: TestCheckJSON (0.00s)
 === RUN   TestInspectJSON
---- PASS: TestInspectJSON (0.01s)
+--- PASS: TestInspectJSON (0.00s)
 === RUN   TestConvertAndClean
 --- PASS: TestConvertAndClean (0.02s)
 === RUN   TestKMLToKMZBundlesFiles
 --- PASS: TestKMLToKMZBundlesFiles (0.00s)
 PASS
-ok  	github.com/softdevstudio/ikml/cmd/ikml	1.085s
+ok  	github.com/softdevstudio/ikml/cmd/ikml	1.059s
 ?   	github.com/softdevstudio/ikml/internal/fixturegen	[no test files]
 ?   	github.com/softdevstudio/ikml/internal/fixtures	[no test files]
 ?   	github.com/softdevstudio/ikml/internal/refgen	[no test files]
