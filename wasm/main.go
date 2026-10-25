@@ -14,6 +14,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path"
 	"strings"
 	"syscall/js"
@@ -27,15 +28,39 @@ var Version = "dev"
 func main() {
 	g := js.Global()
 	g.Set("ikmlVersion", Version)
-	g.Set("ikmlInspect", js.FuncOf(inspect))
-	g.Set("ikmlConvert", js.FuncOf(func(this js.Value, args []js.Value) any { return transform(args, false) }))
-	g.Set("ikmlClean", js.FuncOf(func(this js.Value, args []js.Value) any { return transform(args, true) }))
+	g.Set("ikmlInspect", js.FuncOf(safe(inspect, true)))
+	g.Set("ikmlConvert", js.FuncOf(safe(func(this js.Value, args []js.Value) any { return transform(args, false) }, false)))
+	g.Set("ikmlClean", js.FuncOf(safe(func(this js.Value, args []js.Value) any { return transform(args, true) }, false)))
 	select {}
 }
 
+// safe turns a panic into an error result, so one bad file can't stop
+// the WebAssembly module and break the page for the next one.
+func safe(f func(js.Value, []js.Value) any, asJSON bool) func(js.Value, []js.Value) any {
+	return func(this js.Value, args []js.Value) (out any) {
+		defer func() {
+			if r := recover(); r != nil {
+				msg := fmt.Sprintf("internal error: %v", r)
+				if asJSON {
+					out = jsonString(map[string]string{"error": msg})
+				} else {
+					out = errObj(msg)
+				}
+			}
+		}()
+		return f(this, args)
+	}
+}
+
 func input(args []js.Value) ([]byte, string) {
-	data := make([]byte, args[0].Get("length").Int())
-	js.CopyBytesToGo(data, args[0])
+	arr := args[0]
+	u8 := js.Global().Get("Uint8Array")
+	if !arr.InstanceOf(u8) {
+		// An ArrayBuffer, or a Uint8Array from another frame.
+		arr = u8.New(arr)
+	}
+	data := make([]byte, arr.Get("length").Int())
+	js.CopyBytesToGo(data, arr)
 	name := "file"
 	if len(args) > 1 && args[1].Type() == js.TypeString {
 		name = args[1].String()
