@@ -15,11 +15,8 @@ dji-mission.kmz (kmz, 1.3 KiB)
           <wpml:author>, <wpml:createTime>, <wpml:updateTime>,
           <wpml:missionConfig>, and 12 more. They are vendor extensions iKML does
           not interpret. KML output keeps them; GeoJSON output drops them.
-  INFO    unused-asset  wpmz/waylines.wpml
-          wpmz/waylines.wpml (649 bytes) is inside the KMZ but nothing in the
-          document refers to it.
 
-0 error(s), 0 warning(s), 2 note(s).
+0 error(s), 0 warning(s), 1 note(s).
 
 $ ikml check testdata/good/earth-pro-export.kml
 earth-pro-export.kml (kml, 3.3 KiB)

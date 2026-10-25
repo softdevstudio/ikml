@@ -1,4 +1,4 @@
-ikml.wasm bytes: 5160944
+ikml.wasm bytes: 5161278
 ok   version: 0.1.0
 ok   inspect finds swapped-latlon
 ok   good file has no errors: 0
