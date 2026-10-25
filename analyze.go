@@ -443,7 +443,9 @@ func checkRefs(d *Doc) {
 	}
 	if d.Format == FormatKMZ && d.MainPath != "" {
 		for i, a := range d.Assets {
-			if used[a.Path] {
+			// DJI mission KMZs hold wpmz/waylines.wpml, which the drone's
+			// controller reads by its fixed name; nothing refers to it.
+			if used[a.Path] || strings.HasSuffix(strings.ToLower(a.Path), ".wpml") {
 				d.Assets[i].Used = true
 				continue
 			}

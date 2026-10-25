@@ -1,0 +1,347 @@
+$ ikml check testdata/good/arcgis-export.kml
+arcgis-export.kml (kml, 2.8 KiB)
+No problems found.
+
+$ ikml check testdata/good/clean.geojson
+clean.geojson (geojson, 1.1 KiB)
+No problems found.
+
+$ ikml check testdata/good/dji-mission.kmz
+dji-mission.kmz (kmz, 1.3 KiB)
+
+  INFO    unknown-element  line 4
+          16 different elements from the wpml namespace
+          (http://www.dji.com/wpmz/1.0.2) appear 37 times in all, first here:
+          <wpml:author>, <wpml:createTime>, <wpml:updateTime>,
+          <wpml:missionConfig>, and 12 more. They are vendor extensions iKML does
+          not interpret. KML output keeps them; GeoJSON output drops them.
+  INFO    unused-asset  wpmz/waylines.wpml
+          wpmz/waylines.wpml (649 bytes) is inside the KMZ but nothing in the
+          document refers to it.
+
+0 error(s), 0 warning(s), 2 note(s).
+
+$ ikml check testdata/good/earth-pro-export.kml
+earth-pro-export.kml (kml, 3.3 KiB)
+
+  WARNING http-ref  Style 's_ylw-pushpin_hl' (line 21)
+          The icon http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png
+          uses plain http:// (2 references, first here). Browsers and some viewers
+          block it, and the file is not included.
+  INFO    unknown-element  line 5
+          <gx:CascadingStyle> appears once. iKML does not interpret it. KML output
+          keeps it; GeoJSON output drops it.
+
+0 error(s), 1 warning(s), 1 note(s).
+
+$ ikml check testdata/good/gps-track.kml
+gps-track.kml (kml, 1.5 KiB)
+
+  INFO    has-tracks
+          The file has 1 gx:Track GPS track with a time for each point.
+  INFO    has-timestamps
+          1 placemark carries a TimeStamp or TimeSpan.
+
+0 error(s), 0 warning(s), 2 note(s).
+
+$ ikml check testdata/good/mymaps-export.kml
+mymaps-export.kml (kml, 3.4 KiB)
+
+  INFO    remote-ref  Style 'icon-1899-0288D1-normal' (line 12)
+          2 references to files on www.gstatic.com, first here. They load from the
+          internet and are not inside the file.
+
+0 error(s), 0 warning(s), 1 note(s).
+
+$ ikml check testdata/good/photo-tour.kmz
+photo-tour.kmz (kmz, 8.4 KiB)
+No problems found.
+
+$ ikml check testdata/good/qgis-export.kml
+qgis-export.kml (kml, 1.6 KiB)
+No problems found.
+
+$ ikml check testdata/good/timespan-extrude.kml
+timespan-extrude.kml (kml, 568 bytes)
+
+  INFO    has-timestamps
+          1 placemark carries a TimeStamp or TimeSpan.
+
+0 error(s), 0 warning(s), 1 note(s).
+
+$ ikml check testdata/bad/altitude-clamped.kml
+altitude-clamped.kml (kml, 476 bytes)
+
+  WARNING duplicate-points  Placemark 'Flight path' (line 6)
+          The line has 1 position repeated right after itself.
+  WARNING altitude-ignored  Placemark 'Flight path' (line 6)
+          4 positions have an altitude, but the altitude mode is clampToGround
+          (the default). Most viewers will draw the shape on the ground.
+  WARNING mixed-dimensions  Placemark 'Mixed' (line 12)
+          The shape mixes 1 position without altitude and 1 position with
+          altitude.
+  WARNING altitude-ignored  Placemark 'Mixed' (line 12)
+          1 position has an altitude, but the altitude mode is clampToGround (the
+          default). Most viewers will draw the shape on the ground.
+
+0 error(s), 4 warning(s), 0 note(s).
+
+$ ikml check testdata/bad/bad-positions.geojson
+bad-positions.geojson (geojson, 396 bytes)
+
+  ERROR   coord-parse  Feature #1
+          The Point has 1 position that is not an array of numbers. A position
+          must be an array of two or three numbers, like [34.78, 32.08].
+  ERROR   lon-range  Feature #2
+          2 longitude values are outside -180 to 180 (for example 200.5).
+  WARNING null-island  Feature #3
+          1 position is exactly 0,0. That is in the ocean off West Africa, and
+          usually means a missing location was written as zero.
+
+2 error(s), 1 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/broken-style.kml
+broken-style.kml (kml, 698 bytes)
+
+  ERROR   style-missing  Placemark 'Uses a style that was deleted' (line 11)
+          The style #blue is not defined in this file. Viewers will draw this
+          placemark with default styling.
+  ERROR   style-missing  StyleMap 'pin' (line 7)
+          The style map points to #red-hover, which is not defined in this file.
+
+2 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/crs-clockwise.geojson
+crs-clockwise.geojson (geojson, 615 bytes)
+
+  ERROR   ring-unclosed  Feature #2 'Park B'
+          The outer ring does not end on its first point.
+  WARNING geojson-crs
+          The file has a "crs" member (urn:ogc:def:crs:OGC:1.3:CRS84). RFC 7946
+          removed it; the coordinates are already WGS 84, so it can simply be
+          dropped.
+  INFO    foreign-members
+          The member "name" at the top level is not part of GeoJSON.
+  INFO    winding  Feature #1 'Park A'
+          The outer ring winds the other way from RFC 7946, which asks for
+          counterclockwise. Most tools accept either.
+
+1 error(s), 1 warning(s), 2 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/duplicate-ids.kml
+duplicate-ids.kml (kml, 615 bytes)
+
+  WARNING duplicate-ids  Style 'a' (line 5)
+          The id "a" is used more than once (first at Style 'a').
+  WARNING duplicate-ids  Placemark 'Also one' (line 14)
+          The id "p1" is used more than once (first at Placemark 'One').
+  INFO    empty-folder  Folder 'Empty layer' (line 6)
+          This folder has nothing inside.
+
+0 error(s), 2 warning(s), 1 note(s).
+
+$ ikml check testdata/bad/invalid.geojson
+invalid.geojson (geojson, 243 bytes)
+The file could not be read completely.
+
+  ERROR   json-invalid  line 5
+          The JSON is broken at line 5: invalid character '"' after object
+          key:value pair.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/kml21-namespace.kml
+kml21-namespace.kml (kml, 259 bytes)
+
+  WARNING old-namespace  line 2
+          The file uses the old namespace http://earth.google.com/kml/2.1. Newer
+          tools expect http://www.opengis.net/kml/2.2.
+
+0 error(s), 1 warning(s), 0 note(s).
+
+$ ikml check testdata/bad/local-path.kmz
+local-path.kmz (kmz, 468 bytes)
+
+  ERROR   local-path-ref  Style 'pin' (line 6)
+          The icon file:///C:/Users/maria/Desktop/icons/pin.png points to a file
+          on the creator's computer. Nobody else can open it.
+  ERROR   local-path-ref  Placemark 'Office' (line 10)
+          The image in a description /Users/maria/Pictures/office.jpg points to a
+          file on the creator's computer. Nobody else can open it.
+
+2 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/malformed.kml
+malformed.kml (kml, 380 bytes)
+The file could not be read completely.
+
+  ERROR   xml-invalid  line 9
+          The XML is broken at line 9: invalid character entity & (no semicolon).
+          A plain & in text must be written as &amp; (or the text wrapped in
+          <![CDATA[ ... ]]>). iKML shows only what it could read before that
+          point.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/nested-collection.geojson
+nested-collection.geojson (geojson, 513 bytes)
+
+  WARNING geojson-nested-collection  Feature #1 'Campus' > GeometryCollection
+          A GeometryCollection is nested inside another GeometryCollection. RFC
+          7946 advises against this and some tools reject it.
+  WARNING empty-placemark  Feature #2
+          This placemark has no geometry, so it will not appear on a map.
+  INFO    foreign-members  Feature #2
+          The member "source" in Feature #2 is not part of GeoJSON.
+
+0 error(s), 2 warning(s), 1 note(s).
+
+$ ikml check testdata/bad/network-link.kml
+network-link.kml (kml, 754 bytes)
+
+  WARNING http-ref  NetworkLink 'Weather radar' (line 5)
+          The network link http://example.com/radar.kml uses plain http://.
+          Browsers and some viewers block it, and the file is not included.
+  INFO    network-link  NetworkLink 'Weather radar' (line 5)
+          NetworkLink to http://example.com/radar.kml. Its contents load from
+          there and are not part of this file.
+  INFO    network-link  NetworkLink 'Buses' (line 13)
+          NetworkLink to https://example.org/buses.kmz. Its contents load from
+          there and are not part of this file.
+  INFO    external-file-ref  ScreenOverlay 'Legend' (line 17)
+          The overlay image legend.png is a separate file that must sit next to
+          this .kml. If it is missing, the overlay image will not show. Converting
+          to .kmz bundles it.
+  INFO    overlay-present
+          The file has 1 ScreenOverlay.
+
+0 error(s), 1 warning(s), 4 note(s).
+
+$ ikml check testdata/bad/no-kml.kmz
+no-kml.kmz (kmz, 476 bytes)
+The file could not be read completely.
+
+  ERROR   kmz-no-kml
+          The archive has 1 file(s) but no .kml document.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/no-namespace.kml
+no-namespace.kml (kml, 128 bytes)
+
+  INFO    no-namespace  line 1
+          The <kml> root has no namespace. Most programs read it anyway.
+
+0 error(s), 0 warning(s), 1 note(s).
+
+$ ikml check testdata/bad/null-island.kml
+null-island.kml (kml, 568 bytes)
+
+  WARNING null-island  Placemark 'Customer 1001' (line 6)
+          1 position is exactly 0,0. That is in the ocean off West Africa, and
+          usually means a missing location was written as zero.
+  WARNING null-island  Placemark 'Customer 1002' (line 10)
+          1 position is exactly 0,0. That is in the ocean off West Africa, and
+          usually means a missing location was written as zero.
+  WARNING empty-placemark  Placemark 'Customer 1004 (no address)' (line 16)
+          This placemark has no geometry, so it will not appear on a map.
+
+0 error(s), 3 warning(s), 0 note(s).
+
+$ ikml check testdata/bad/out-of-range.kml
+out-of-range.kml (kml, 515 bytes)
+
+  ERROR   lat-range  Placemark 'Projected by mistake' (line 6)
+          1 latitude value is outside -90 to 90 (for example 665120.75). Values
+          this large are usually projected coordinates in metres (such as UTM),
+          not degrees. KML and GeoJSON need longitude and latitude in WGS 84.
+  ERROR   lon-range  Placemark 'Projected by mistake' (line 6)
+          1 longitude value is outside -180 to 180 (for example 180500.25).
+  ERROR   lat-range  Placemark 'Over the pole' (line 10)
+          1 latitude value is outside -90 to 90 (for example 95.2).
+  ERROR   lon-range  Placemark 'Past the date line' (line 14)
+          1 longitude value is outside -180 to 180 (for example -185).
+
+4 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/overlay-missing-icon.kmz
+overlay-missing-icon.kmz (kmz, 9.5 KiB)
+
+  ERROR   kmz-missing-asset  Style 'marker' (line 6)
+          The icon files/marker.png should be inside the KMZ but is not there.
+  INFO    unused-asset  files/old-logo.png
+          files/old-logo.png (900 bytes) is inside the KMZ but nothing in the
+          document refers to it.
+  INFO    overlay-present
+          The file has 1 GroundOverlay.
+
+1 error(s), 0 warning(s), 2 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/spaced-coords.kml
+spaced-coords.kml (kml, 491 bytes)
+
+  WARNING coord-spacing  Placemark 'Hand-typed route' (line 6)
+          Coordinates have spaces next to the commas, like "lon, lat". Some
+          programs read each number as a separate point.
+  WARNING altitude-ignored  Placemark 'Scientific' (line 16)
+          1 position has an altitude, but the altitude mode is clampToGround (the
+          default). Most viewers will draw the shape on the ground.
+
+0 error(s), 2 warning(s), 0 note(s).
+
+$ ikml check testdata/bad/swapped-latlon.kml
+swapped-latlon.kml (kml, 588 bytes)
+
+  ERROR   swapped-latlon
+          Every placemark in the file (3) has latitude and longitude in the wrong
+          order: the first value of each point is within ±90 and the second is
+          outside it. A swapped point lands on the far side of the world.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/swapped-one-placemark.kml
+swapped-one-placemark.kml (kml, 381 bytes)
+
+  ERROR   swapped-latlon  Placemark 'Typed in by hand' (line 8)
+          Latitude and longitude are in the wrong order: every point has its first
+          value within ±90 and its second outside it.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/unclosed-ring.kml
+unclosed-ring.kml (kml, 804 bytes)
+
+  ERROR   ring-unclosed  Placemark 'Field 7' (line 6)
+          The outer ring does not end on its first point.
+  ERROR   ring-too-short  Placemark 'Sliver' (line 18)
+          The outer ring has 3 positions. A ring needs at least 4 (three corners
+          plus the closing point).
+  ERROR   line-too-short  Placemark 'Stub' (line 26)
+          The line has 1 position. A line needs at least 2.
+
+3 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+
+$ ikml check testdata/bad/unparseable-coords.kml
+unparseable-coords.kml (kml, 438 bytes)
+
+  ERROR   coord-parse  Placemark 'Typo in a tuple' (line 6)
+          Could not read the coordinate "10.2;50.2" as two or three numbers.
+  ERROR   coord-parse  Placemark 'Degrees and minutes' (line 12)
+          Could not read the coordinate "10°30'E,50°10'N" as two or three
+          numbers.
+
+2 error(s), 0 warning(s), 0 note(s).
+(exit 1)
+

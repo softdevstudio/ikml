@@ -1,0 +1,11 @@
+{
+  "kml_bytes": 27087090,
+  "kmz_bytes": 8995955,
+  "positions": 1000000,
+  "placemarks": 1000,
+  "check_kml_seconds": 0.9,
+  "check_kmz_seconds": 1.01,
+  "convert_kml_to_geojson_seconds": 3.71,
+  "peak_memory_mb_all_runs": 385,
+  "note": "best of 3 runs each; peak memory is the largest of all runs"
+}

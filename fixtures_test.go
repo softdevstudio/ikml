@@ -134,6 +134,7 @@ func TestFixtureContents(t *testing.T) {
 		geoms                                                  map[string]int
 		fields                                                 []string
 		notes                                                  []string
+		forbid                                                 []string // codes that must not appear
 	}
 	cases := map[string]want{
 		"earth-pro-export.kml": {placemarks: 4, folders: 3, styles: 2, styleMaps: 1, coords: 11,
@@ -146,7 +147,7 @@ func TestFixtureContents(t *testing.T) {
 		"gps-track.kml": {placemarks: 2, styles: 1, coords: 6, geoms: map[string]int{"Track": 1, "Point": 1},
 			notes: []string{"has-tracks", "has-timestamps"}},
 		"dji-mission.kmz": {placemarks: 4, folders: 1, coords: 4, assets: 1, geoms: map[string]int{"Point": 4},
-			notes: []string{"unknown-element", "unused-asset"}},
+			notes: []string{"unknown-element"}, forbid: []string{"unused-asset"}},
 		"photo-tour.kmz": {placemarks: 2, styles: 1, coords: 2, assets: 3},
 		"clean.geojson": {placemarks: 4, coords: 16,
 			geoms: map[string]int{"Point": 3, "LineString": 1, "Polygon": 1, "MultiPoint": 1}},
@@ -182,6 +183,11 @@ func TestFixtureContents(t *testing.T) {
 			for _, n := range w.notes {
 				if _, ok := codes[n]; !ok {
 					t.Errorf("missing note %s", n)
+				}
+			}
+			for _, n := range w.forbid {
+				if _, ok := codes[n]; ok {
+					t.Errorf("unexpected %s", n)
 				}
 			}
 		})
