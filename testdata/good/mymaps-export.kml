@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Field trip 2026</name>
+    <description>Two layers exported from a shared map.</description>
+    <Style id="icon-1899-0288D1-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1899-0288D1-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1899-0288D1">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-0288D1-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-0288D1-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-E65100-3000-normal">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>3</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-E65100-3000-highlight">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>4.5</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-E65100-3000">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-E65100-3000-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-E65100-3000-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Meeting points</name>
+      <Placemark>
+        <name>North gate</name>
+        <description><![CDATA[Bus stops here.<br>Bring water.]]></description>
+        <styleUrl>#icon-1899-0288D1</styleUrl>
+        <ExtendedData>
+          <Data name="contact">
+            <value>Dana</value>
+          </Data>
+          <Data name="capacity">
+            <value>40</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            35.2134,31.7767,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Lunch spot</name>
+        <styleUrl>#icon-1899-0288D1</styleUrl>
+        <ExtendedData>
+          <Data name="contact">
+            <value>Omer</value>
+          </Data>
+          <Data name="capacity">
+            <value>25</value>
+          </Data>
+        </ExtendedData>
+        <Point>
+          <coordinates>
+            35.2291,31.7801,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Routes</name>
+      <Placemark>
+        <name>Morning loop</name>
+        <styleUrl>#line-E65100-3000</styleUrl>
+        <ExtendedData>
+          <Data name="length_km">
+            <value>2.4</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            35.2134,31.7767,0
+            35.2178,31.7781,0
+            35.2230,31.7790,0
+            35.2291,31.7801,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

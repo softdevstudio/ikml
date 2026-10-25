@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Depots (exported from a spreadsheet)</name>
+    <Placemark>
+      <name>Depot North</name>
+      <Point><coordinates>32.0853,134.7818</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Depot South</name>
+      <Point><coordinates>31.2520,-121.0001</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Supply line</name>
+      <LineString><coordinates>32.0853,134.7818 31.2520,-121.0001</coordinates></LineString>
+    </Placemark>
+  </Document>
+</kml>

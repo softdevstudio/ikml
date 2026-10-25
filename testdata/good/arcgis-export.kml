@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="Parcels">
+	<name>Parcels</name>
+	<open>1</open>
+	<Snippet maxLines="0"></Snippet>
+	<Schema name="Parcels" id="Parcels_Schema">
+		<SimpleField type="string" name="PARCEL_ID"><displayName>Parcel ID</displayName></SimpleField>
+		<SimpleField type="double" name="AREA_M2"><displayName>Area (m2)</displayName></SimpleField>
+		<SimpleField type="int" name="ZONE"><displayName>Zone</displayName></SimpleField>
+	</Schema>
+	<Style id="PolyStyle00">
+		<LabelStyle>
+			<color>00000000</color>
+			<scale>0.000000</scale>
+		</LabelStyle>
+		<LineStyle>
+			<color>ff6e6e6e</color>
+			<width>0.400000</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>ff00aaff</color>
+			<outline>1</outline>
+		</PolyStyle>
+	</Style>
+	<Folder id="FeatureLayer0">
+		<name>Parcels</name>
+		<Snippet maxLines="0"></Snippet>
+		<Placemark id="ID_00000">
+			<name>P-1041</name>
+			<Snippet maxLines="0"></Snippet>
+			<description><![CDATA[<html><body><table><tr><td>PARCEL_ID</td><td>P-1041</td></tr></table></body></html>]]></description>
+			<styleUrl>#PolyStyle00</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#Parcels_Schema">
+					<SimpleData name="PARCEL_ID">P-1041</SimpleData>
+					<SimpleData name="AREA_M2">1520.75</SimpleData>
+					<SimpleData name="ZONE">3</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<MultiGeometry>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates> -122.4194,37.7749,0 -122.4180,37.7749,0 -122.4180,37.7760,0 -122.4194,37.7760,0 -122.4194,37.7749,0</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+					<innerBoundaryIs>
+						<LinearRing>
+							<coordinates> -122.4190,37.7752,0 -122.4190,37.7756,0 -122.4185,37.7756,0 -122.4185,37.7752,0 -122.4190,37.7752,0</coordinates>
+						</LinearRing>
+					</innerBoundaryIs>
+				</Polygon>
+			</MultiGeometry>
+		</Placemark>
+		<Placemark id="ID_00001">
+			<name>P-1042</name>
+			<Snippet maxLines="0"></Snippet>
+			<description><![CDATA[<html><body><table><tr><td>PARCEL_ID</td><td>P-1042</td></tr></table></body></html>]]></description>
+			<styleUrl>#PolyStyle00</styleUrl>
+			<ExtendedData>
+				<SchemaData schemaUrl="#Parcels_Schema">
+					<SimpleData name="PARCEL_ID">P-1042</SimpleData>
+					<SimpleData name="AREA_M2">980.10</SimpleData>
+					<SimpleData name="ZONE">3</SimpleData>
+				</SchemaData>
+			</ExtendedData>
+			<MultiGeometry>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates> -122.4180,37.7749,0 -122.4170,37.7749,0 -122.4170,37.7758,0 -122.4180,37.7758,0 -122.4180,37.7749,0</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</MultiGeometry>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>

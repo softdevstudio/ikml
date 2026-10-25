@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Typo in a tuple</name>
+      <LineString>
+        <coordinates>10.0,50.0 10.1,50.1 10.2;50.2 10.3,50.3</coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+      <name>Degrees and minutes</name>
+      <Point><coordinates>10°30'E,50°10'N</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

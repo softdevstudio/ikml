@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Campus" },
+      "geometry": { "type": "GeometryCollection", "geometries": [
+        { "type": "Point", "coordinates": [151.2093, -33.8688] },
+        { "type": "GeometryCollection", "geometries": [
+          { "type": "LineString", "coordinates": [[151.2093, -33.8688], [151.2100, -33.8700]] }
+        ] }
+      ] } },
+    { "type": "Feature", "properties": null, "geometry": null, "source": "survey-app" }
+  ]
+}

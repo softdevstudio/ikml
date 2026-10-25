@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Style id="a"><IconStyle><color>ff00ff00</color></IconStyle></Style>
+    <Style id="a"><IconStyle><color>ffff0000</color></IconStyle></Style>
+    <Folder>
+      <name>Empty layer</name>
+    </Folder>
+    <Placemark id="p1">
+      <name>One</name>
+      <styleUrl>#a</styleUrl>
+      <Point><coordinates>139.6917,35.6895</coordinates></Point>
+    </Placemark>
+    <Placemark id="p1">
+      <name>Also one</name>
+      <Point><coordinates>139.7000,35.6900</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

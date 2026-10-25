@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Hand-typed route</name>
+      <LineString>
+        <coordinates>
+          34.7818, 32.0853
+          34.7900, 32.0900
+          34.8000 , 32.1000
+        </coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+      <name>Scientific</name>
+      <Point><coordinates>3.47818E1,3.20853e+1,1.5e2</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

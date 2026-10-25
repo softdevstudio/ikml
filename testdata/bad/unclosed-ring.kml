@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Field 7</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              5.1200,52.0900 5.1260,52.0900 5.1260,52.0940 5.1200,52.0940
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Sliver</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing><coordinates>5.13,52.09 5.14,52.09 5.13,52.09</coordinates></LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Stub</name>
+      <LineString><coordinates>5.15,52.10</coordinates></LineString>
+    </Placemark>
+  </Document>
+</kml>

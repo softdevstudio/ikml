@@ -1,0 +1,32 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "well-1",
+      "properties": { "name": "Well 1", "depth_m": 42, "active": true, "tags": ["water", "public"] },
+      "geometry": { "type": "Point", "coordinates": [36.8219, -1.2921] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Pipe A" },
+      "geometry": { "type": "LineString", "coordinates": [[36.8219, -1.2921], [36.8250, -1.2900], [36.8301, -1.2888]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Reserve", "stroke": "#336699", "fill": "#88cc88", "fill-opacity": 0.4 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [[36.80, -1.30], [36.84, -1.30], [36.84, -1.27], [36.80, -1.27], [36.80, -1.30]],
+          [[36.81, -1.29], [36.81, -1.28], [36.82, -1.28], [36.82, -1.29], [36.81, -1.29]]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Kiosks" },
+      "geometry": { "type": "MultiPoint", "coordinates": [[36.8230, -1.2910], [36.8240, -1.2915]] }
+    }
+  ]
+}

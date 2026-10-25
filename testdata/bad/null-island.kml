@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Customer 1001</name>
+      <Point><coordinates>0,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Customer 1002</name>
+      <Point><coordinates>0.0,0.0,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Customer 1003</name>
+      <Point><coordinates>2.3522,48.8566</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Customer 1004 (no address)</name>
+    </Placemark>
+  </Document>
+</kml>

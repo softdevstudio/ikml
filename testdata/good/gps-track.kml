@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <Document>
+    <name>Morning ride</name>
+    <Style id="track">
+      <LineStyle><color>ff2a7fff</color><width>4</width></LineStyle>
+    </Style>
+    <Placemark>
+      <name>Ride 2026-10-12</name>
+      <styleUrl>#track</styleUrl>
+      <gx:Track>
+        <altitudeMode>absolute</altitudeMode>
+        <when>2026-10-12T06:01:00Z</when>
+        <when>2026-10-12T06:01:10Z</when>
+        <when>2026-10-12T06:01:20Z</when>
+        <when>2026-10-12T06:01:30Z</when>
+        <when>2026-10-12T06:01:40Z</when>
+        <gx:coord>34.7818 32.0853 12.4</gx:coord>
+        <gx:coord>34.7822 32.0859 12.9</gx:coord>
+        <gx:coord>34.7826 32.0866 13.5</gx:coord>
+        <gx:coord>34.7826 32.0866 13.5</gx:coord>
+        <gx:coord>34.7835 32.0879 14.8</gx:coord>
+        <ExtendedData>
+          <SchemaData schemaUrl="#hr">
+            <gx:SimpleArrayData name="heartrate">
+              <gx:value>112</gx:value>
+              <gx:value>118</gx:value>
+              <gx:value>121</gx:value>
+              <gx:value>121</gx:value>
+              <gx:value>125</gx:value>
+            </gx:SimpleArrayData>
+          </SchemaData>
+        </ExtendedData>
+      </gx:Track>
+    </Placemark>
+    <Placemark>
+      <name>Coffee stop</name>
+      <TimeStamp><when>2026-10-12T06:40:00Z</when></TimeStamp>
+      <Point><coordinates>34.7901,32.0951</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

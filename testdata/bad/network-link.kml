@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Live layers</name>
+    <NetworkLink>
+      <name>Weather radar</name>
+      <Link>
+        <href>http://example.com/radar.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>300</refreshInterval>
+      </Link>
+    </NetworkLink>
+    <NetworkLink>
+      <name>Buses</name>
+      <Link><href>https://example.org/buses.kmz</href></Link>
+    </NetworkLink>
+    <ScreenOverlay>
+      <name>Legend</name>
+      <Icon><href>legend.png</href></Icon>
+      <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+    </ScreenOverlay>
+  </Document>
+</kml>

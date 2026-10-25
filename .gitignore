@@ -1,0 +1,4 @@
+web/ikml.wasm
+dist/
+*.test
+/ikml

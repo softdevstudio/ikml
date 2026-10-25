@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Harbour walk.kml</name>
+	<gx:CascadingStyle kml:id="__managed_style_1">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/rpc/cc/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<Style id="s_ylw-pushpin_hl">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>3</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>7f00ff00</color>
+		</PolyStyle>
+	</Style>
+	<StyleMap id="m_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#s_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#s_ylw-pushpin_hl</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="s_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>3</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>7f00ff00</color>
+		</PolyStyle>
+	</Style>
+	<Folder>
+		<name>Harbour walk</name>
+		<open>1</open>
+		<LookAt>
+			<longitude>34.7700</longitude>
+			<latitude>32.0950</latitude>
+			<altitude>0</altitude>
+			<heading>-12.5</heading>
+			<tilt>45</tilt>
+			<range>1800</range>
+			<gx:altitudeMode>relativeToSeaFloor</gx:altitudeMode>
+		</LookAt>
+		<Folder>
+			<name>Stops</name>
+			<Placemark>
+				<name>Lighthouse</name>
+				<description>Start here. Open 9:00 to 17:00.</description>
+				<LookAt>
+					<longitude>34.76712</longitude>
+					<latitude>32.09611</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>500</range>
+					<gx:altitudeMode>relativeToSeaFloor</gx:altitudeMode>
+				</LookAt>
+				<styleUrl>#m_ylw-pushpin</styleUrl>
+				<Point>
+					<gx:drawOrder>1</gx:drawOrder>
+					<coordinates>34.76712,32.09611,0</coordinates>
+				</Point>
+			</Placemark>
+			<Placemark>
+				<name>Fish market</name>
+				<styleUrl>#m_ylw-pushpin</styleUrl>
+				<Point>
+					<gx:drawOrder>1</gx:drawOrder>
+					<coordinates>34.77105,32.09233,0</coordinates>
+				</Point>
+			</Placemark>
+		</Folder>
+		<Folder>
+			<name>Route</name>
+			<Placemark>
+				<name>Walking path</name>
+				<styleUrl>#m_ylw-pushpin</styleUrl>
+				<LineString>
+					<tessellate>1</tessellate>
+					<coordinates>
+						34.76712,32.09611,0 34.76801,32.09502,0 34.76955,32.09390,0 34.77105,32.09233,0 
+					</coordinates>
+				</LineString>
+			</Placemark>
+			<Placemark>
+				<name>Market square</name>
+				<styleUrl>#m_ylw-pushpin</styleUrl>
+				<Polygon>
+					<tessellate>1</tessellate>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								34.77080,32.09250,0 34.77130,32.09250,0 34.77130,32.09210,0 34.77080,32.09210,0 34.77080,32.09250,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+		</Folder>
+	</Folder>
+</Document>
+</kml>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Projected by mistake</name>
+      <Point><coordinates>180500.25,665120.75</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Over the pole</name>
+      <Point><coordinates>120.5,95.2</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Past the date line</name>
+      <Point><coordinates>-185.0,12.0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

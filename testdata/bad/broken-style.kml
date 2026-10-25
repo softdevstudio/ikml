@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Style id="red"><LineStyle><color>ff0000ff</color></LineStyle></Style>
+    <StyleMap id="pin">
+      <Pair><key>normal</key><styleUrl>#red</styleUrl></Pair>
+      <Pair><key>highlight</key><styleUrl>#red-hover</styleUrl></Pair>
+    </StyleMap>
+    <Placemark>
+      <name>Uses a style that was deleted</name>
+      <styleUrl>#blue</styleUrl>
+      <Point><coordinates>13.4050,52.5200</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Fine</name>
+      <styleUrl>#pin</styleUrl>
+      <Point><coordinates>13.4100,52.5210</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>
