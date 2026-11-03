@@ -74,6 +74,38 @@ Known gaps, not planned yet:
 - No editing beyond the safe fixes in `clean`.
 - The browser preview has no base map, by design (no network requests).
 
+## iKML 0.2: the files people actually have (softdev-plan item 23, approved by YK 2026-11-04)
+
+What and why: the files people bring to a map tool are mostly GPX from a watch or an app and CSV from a spreadsheet, and iKML can open neither. Content and docs repos with map files have no CI gate. The site's copy of the browser tool can drift from the engine unnoticed.
+
+Design decisions:
+- Phase A, GPX in and out.
+  - Detected by content: XML whose root element is `gpx` (GPX 1.0 or 1.1, any namespace prefix) is `FormatGPX`; other XML stays KML.
+  - Model: each `wpt` is a Point placemark (name, desc, time, ele); each `rte` a LineString placemark; each `trk` one placemark, a Track (coordinates with times) per `trkseg`, or a LineString when the segment has no times; several segments make a MultiTrack. Waypoint, route and track elements other than those (cmt, src, sym, type, number, link) become fields, so conversions keep them as properties or ExtendedData.
+  - Everything else is kept verbatim for GPX output: the root's namespace declarations and creator, `metadata`, every `extensions` element, and per-point children other than ele and time (Garmin and Strava heart rate, cadence, temperature and power live there), kept per point.
+  - GPX to GPX keeps all of it. GPX to GeoJSON, KML or KMZ reports what goes: point extensions by element name with counts (hr, cad, atemp, power), other per-point elements, route point names and details, metadata, and extensions on waypoints, routes and tracks; and what is kept in another form (segments as a MultiTrack, fields as properties).
+  - Writing GPX from KML, KMZ or GeoJSON: points become `wpt` (name, desc, time, ele), lines and tracks become `trk` with one `trkseg` per line (times from a Track or GeoJSON coordTimes), polygons and the rest are reported lost, as are fields, styles and folders. GPX 1.1 output, creator "iKML".
+  - New issue codes (never renamed later): `gpx-time-invalid` (a time that isn't RFC 3339), `gpx-time-backwards` (a point earlier than the one before it in a segment), `gpx-version` (version other than 1.0 or 1.1). Coordinate range checks are shared with the other formats.
+  - `clean` on GPX writes GPX with the safe geometry fixes that apply (duplicate points, swapped coordinates on request); everything verbatim stays.
+- Phase B, CSV and batch.
+  - CSV in: detected when the content isn't XML or JSON and the first line, split by `,`, `;` or tab (the one giving the most columns), names a latitude and a longitude column (lat/latitude/y and lon/lng/long/longitude/x, case-insensitive). Each row is a Point; name/title, description/desc, time/timestamp, and ele/elevation/alt/altitude columns map to the model, every other column to a field. New codes: `csv-no-coordinates` (no lat and lon header: unreadable), `csv-bad-row` (a row whose coordinates aren't numbers, skipped), `csv-ragged-row` (a row with a different column count).
+  - CSV out: one row per point (Point placemarks and waypoints), columns name, lat, lon, then ele, time and description when any point has them, then every field in first-seen order. Lines, tracks and polygons are reported lost with counts. RFC 4180 quoting, UTF-8, comma.
+  - `ikml check DIR [--json] [--strict]`: walks the folder (symlinks not followed, files by extension .kml .kmz .geojson .json .gpx .csv, at most 10000 files), checks each, prints one line per file and the totals, or one JSON object with `files` and `totals`. Exit 1 when any file has errors (or warnings with --strict). `ikml check FILE` keeps its 0.1 output.
+  - The Action: composite `action.yml` (PXTA ACTION.md pattern as in ForgeSchema): downloads the release binary for the runner, checks SHA256SUMS, runs `ikml check PATH --json`, writes a `::error`/`::warning` annotation per issue with file and line, a job summary table, and fails on errors (`fail`, `strict` inputs; only true and false accepted). Tested by `.github/workflows/action-test.yml`: local job with a binary built from the commit on the good and bad fixtures, install job on macOS and Windows on push with a published release, download job on the published binaries after each release.
+- Upkeep: `go.mod` to 1.26; a `site-sync` workflow after each release and by hand that compares the site's `static/tool/` with the release's `ikml-web.zip` and fails with the differing files; the browser tool accepts .gpx and .csv.
+- Done when: a Garmin Connect and a Strava GPX export (fixtures written to their documented layout, with heart rate, cadence, temperature and power extensions) round-trip GPX to GPX unchanged in content and GPX to GeoJSON and KML and back with a loss report that names exactly what went.
+- Version 0.2.0.
+
+Steps:
+1. [x] Phase 0: this plan.
+2. [ ] Upkeep: go.mod 1.26.
+3. [ ] Phase A: GPX in and out, loss reports, codes, tests (Garmin and Strava fixtures).
+4. [ ] Phase B: CSV in and out; `check DIR`; the Action and its test workflow.
+5. [ ] site-sync workflow; browser tool accepts .gpx and .csv; README, REFERENCE.md, CHANGELOG.
+6. [ ] Independent review (at most two rounds), fixes, fresh test/results.
+7. [ ] 0.2.0 released by the workflow; assets checked at the tag and latest; downloaded binary run.
+8. [ ] ikml.com post, pages and static/tool; softdevstudio.com note; softdev-plan item 23 done.
+
 ## Next
 
-To be decided and approved with the owner before it goes here.
+iKML 0.2 above is in progress.
