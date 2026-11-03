@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,26 +43,61 @@ type gpxInfo struct {
 // gpx10Meta are the GPX 1.0 root children that GPX 1.1 moved into <metadata>.
 var gpx10Meta = map[string]bool{"name": true, "desc": true, "author": true, "email": true, "url": true, "urlname": true, "time": true, "keywords": true, "bounds": true}
 
-// latLonRe finds the lat and lon attribute values in a start tag.
-var latLonRe = regexp.MustCompile(`\b(lat|lon)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
-
 // coordSpans returns the byte ranges of the lat and lon values in the start
 // tag at raw[start:end], as offsets into raw.
 func coordSpans(raw []byte, start, end int) [2][2]int {
-	var out [2][2]int
-	for _, m := range latLonRe.FindAllSubmatchIndex(raw[start:end], -1) {
-		vs, ve := m[4], m[5]
-		if vs < 0 {
-			vs, ve = m[6], m[7]
+	out := [2][2]int{{-1, -1}, {-1, -1}}
+	t := raw[start:end]
+	i := 1 // past '<'
+	for i < len(t) && !isXMLSpace(t[i]) && t[i] != '>' && t[i] != '/' {
+		i++ // element name
+	}
+	for i < len(t) {
+		for i < len(t) && isXMLSpace(t[i]) {
+			i++
 		}
-		i := 0
-		if string(raw[start+m[2]:start+m[3]]) == "lon" {
-			i = 1
+		if i >= len(t) || t[i] == '>' || t[i] == '/' {
+			break
 		}
-		out[i] = [2]int{start + vs, start + ve}
+		ns := i
+		for i < len(t) && !isXMLSpace(t[i]) && t[i] != '=' && t[i] != '>' {
+			i++
+		}
+		name := string(t[ns:i])
+		for i < len(t) && isXMLSpace(t[i]) {
+			i++
+		}
+		if i >= len(t) || t[i] != '=' {
+			break
+		}
+		i++
+		for i < len(t) && isXMLSpace(t[i]) {
+			i++
+		}
+		if i >= len(t) || (t[i] != '"' && t[i] != '\'') {
+			break
+		}
+		q := t[i]
+		i++
+		vs := i
+		for i < len(t) && t[i] != q {
+			i++
+		}
+		if i >= len(t) {
+			break
+		}
+		switch name {
+		case "lat":
+			out[0] = [2]int{start + vs, start + i}
+		case "lon":
+			out[1] = [2]int{start + vs, start + i}
+		}
+		i++
 	}
 	return out
 }
+
+func isXMLSpace(b byte) bool { return b == ' ' || b == '\t' || b == '\n' || b == '\r' }
 
 // isGPX reports whether XML data has a gpx root element.
 func isGPX(data []byte) bool {
@@ -301,6 +335,9 @@ func latLon(se xml.StartElement) (Coord, string) {
 	var lat, lon string
 	var hasLat, hasLon bool
 	for _, a := range se.Attr {
+		if a.Name.Space != "" {
+			continue // d:lat and the like are not the point's position
+		}
 		switch a.Name.Local {
 		case "lat":
 			lat, hasLat = a.Value, true
@@ -638,10 +675,10 @@ func writeGPXSource(d *Doc, bw *bufio.Writer) {
 					continue
 				}
 				o, sp := l.ptOrig[i], l.ptSpan[i]
-				if c.Lat != o.Lat && sp[0][1] > sp[0][0] {
+				if c.Lat != o.Lat && sp[0][0] >= 0 {
 					edits = append(edits, edit{sp[0][0], sp[0][1], formatFloat(c.Lat)})
 				}
-				if c.Lon != o.Lon && sp[1][1] > sp[1][0] {
+				if c.Lon != o.Lon && sp[1][0] >= 0 {
 					edits = append(edits, edit{sp[1][0], sp[1][1], formatFloat(c.Lon)})
 				}
 			}
@@ -789,6 +826,9 @@ func sum(m map[string]int) int {
 func lossFromGPX(d *Doc, target string) []Loss {
 	g := d.gpx
 	out := []Loss{}
+	if g.badPoints > 0 {
+		out = append(out, Loss{What: "Points without a position", Count: g.badPoints, Outcome: "lost", Detail: "Waypoints, route points and track points whose lat or lon can't be read are left out."})
+	}
 	if target == "csv" {
 		lines := 0
 		for _, pm := range d.Placemarks() {

@@ -100,7 +100,7 @@ func TestCSVRoundTrip(t *testing.T) {
 	if buf.String() != want {
 		t.Errorf("CSV via GeoJSON:\n%s\nwant\n%s", buf.String(), want)
 	}
-	if l := lossByWhat(LossReport(src, "geojson"))["Other columns"]; l.Count != 6 || l.Outcome != "changed" {
+	if l := lossByWhat(LossReport(src, "geojson"))["Other column values"]; l.Count != 6 || l.Outcome != "changed" {
 		t.Errorf("loss to GeoJSON: %+v", l)
 	}
 }
@@ -195,5 +195,31 @@ func TestCSVDelimiterFindsCoordinates(t *testing.T) {
 	}
 	if c := d.Placemarks()[0].Geometry.Coords[0]; c.Lat != 1.25 || c.Lon != 2.5 {
 		t.Errorf("tsv coords %+v", c)
+	}
+}
+
+// Converting CSV away reports the rows left out and the extra values of
+// ragged rows; clean rewrites only the coordinate cells, so a quoted cell
+// with CRLF inside keeps it.
+func TestCSVLossesAndCellSplice(t *testing.T) {
+	d, _ := Open("x.csv", []byte("name,lat,lon\nA,1,2,extra,more\nB,x,3\n"))
+	ls := lossByWhat(LossReport(d, "geojson"))
+	if ls["Rows without coordinates"].Count != 1 || ls["Values past the last column"].Count != 2 {
+		t.Errorf("losses: %+v", ls)
+	}
+	src := "name,lat,lon\r\n\"A\r\nline2\",\"134.5\",32.1\r\nB,1,2\r\n"
+	d, _ = Open("y.csv", []byte(src))
+	if p := d.Placemarks(); len(p) != 2 || p[1].Path != "/row[2]" {
+		t.Fatalf("rows: %d", len(p))
+	}
+	c, _, err := Clean(d, CleanOptions{FixSwapped: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	WriteCSV(c, &buf)
+	want := "name,lat,lon\r\n\"A\r\nline2\",\"32.1\",134.5\r\nB,1,2\r\n"
+	if buf.String() != want {
+		t.Errorf("clean output %q, want %q", buf.String(), want)
 	}
 }

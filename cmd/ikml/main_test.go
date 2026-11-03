@@ -282,6 +282,14 @@ func TestCheckDirEdges(t *testing.T) {
 			t.Errorf("symlinked folder: %+v", r)
 		}
 	}
+	lonely := t.TempDir()
+	if os.Symlink(filepath.Join(dir, "a", "bom.json"), filepath.Join(lonely, "m.geojson")) == nil {
+		code, out, _ := runCLI("check", lonely, "--json")
+		json.Unmarshal([]byte(out), &r)
+		if code != 0 || r.Totals.Skipped != 1 || !strings.Contains(r.Skipped[0].Reason, "symbolic link") {
+			t.Errorf("symlinked file: %d %+v", code, r)
+		}
+	}
 	empty := t.TempDir()
 	if code, _, errs := runCLI("check", empty); code != 0 || !strings.Contains(errs, "no map files") {
 		t.Errorf("empty folder: %d %q", code, errs)

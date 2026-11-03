@@ -91,6 +91,7 @@ func skipReason(path string, data []byte) string {
 func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 	var paths []string
 	var unreadable []batchFile
+	var links []skipped
 	root := dir
 	if real, err := filepath.EvalSymlinks(dir); err == nil {
 		root = real
@@ -117,7 +118,14 @@ func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 			}
 			return nil
 		}
-		if !e.Type().IsRegular() || !batchExts[strings.ToLower(filepath.Ext(p))] {
+		if !batchExts[strings.ToLower(filepath.Ext(p))] {
+			return nil
+		}
+		if e.Type()&fs.ModeSymlink != 0 {
+			links = append(links, skipped{filepath.ToSlash(p), "a symbolic link, not followed"})
+			return nil
+		}
+		if !e.Type().IsRegular() {
 			return nil
 		}
 		paths = append(paths, p)
@@ -134,6 +142,7 @@ func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 	out := batchJSON{Files: []batchFile{}, Skipped: []skipped{}}
 	out.Files = append(out.Files, unreadable...)
 	out.Totals.Unreadable += len(unreadable)
+	out.Skipped = append(out.Skipped, links...)
 	for _, p := range paths {
 		name := filepath.ToSlash(p)
 		data, err := readLimited(p)

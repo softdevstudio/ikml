@@ -44,10 +44,18 @@ func analyze(d *Doc) {
 	// Swapped coordinates: one issue for the whole file when every
 	// placemark is affected, otherwise one per placemark.
 	if swappedPMs > 1 && swappedPMs == geomPlacemarks {
-		c.add("swapped-latlon", Loc{}, swappedPMs, "Every placemark in the file (%d) has latitude and longitude in the wrong order: the first value of each point is within ±90 and the second is outside it. A swapped point lands on the far side of the world.", swappedPMs)
+		how := "the first value of each point is within ±90 and the second is outside it"
+		if d.Format == FormatGPX || d.Format == FormatCSV {
+			how = "each point's latitude is outside ±90 and its longitude is within it"
+		}
+		c.add("swapped-latlon", Loc{}, swappedPMs, "Every placemark in the file (%d) has latitude and longitude in the wrong order: %s. A swapped point lands on the far side of the world.", swappedPMs, how)
 	} else {
 		for _, pm := range swappedList {
-			c.add("swapped-latlon", Loc{Path: pm.Path, Line: pm.Line}, 0, "Latitude and longitude are in the wrong order: every point has its first value within ±90 and its second outside it.")
+			msg := "Latitude and longitude are in the wrong order: every point has its first value within ±90 and its second outside it."
+			if d.Format == FormatGPX || d.Format == FormatCSV {
+				msg = "Latitude and longitude look swapped: every point's latitude is outside ±90 and its longitude is within it."
+			}
+			c.add("swapped-latlon", Loc{Path: pm.Path, Line: pm.Line}, 0, "%s", msg)
 		}
 	}
 

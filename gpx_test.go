@@ -335,3 +335,33 @@ func TestGPXCleanSwapped(t *testing.T) {
 		t.Errorf("point details lost in clean:\n%s", buf.String())
 	}
 }
+
+// Only the unprefixed lat and lon attributes are the point's position, and
+// clean writes its fix into exactly those, not into look-alikes.
+func TestGPXSwapOnlyRealAttributes(t *testing.T) {
+	src := `<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:d="urn:d" version="1.1">` +
+		`<wpt lat="120" lon="45" data-lat="7"/>` +
+		`<wpt lat = '121' lon="46" note='lon="0"'/>` +
+		`<wpt d:lat="5" lat="122" lon="47"/></gpx>`
+	d, err := Open("x.gpx", []byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pms := d.Placemarks()
+	if c := pms[2].Geometry.Coords[0]; c.Lat != 122 || c.Lon != 47 {
+		t.Errorf("d:lat taken as the position: %+v", c)
+	}
+	c, _, err := Clean(d, CleanOptions{FixSwapped: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	WriteGPX(c, &buf)
+	want := `<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:d="urn:d" version="1.1">` +
+		`<wpt lat="45" lon="120" data-lat="7"/>` +
+		`<wpt lat = '46' lon="121" note='lon="0"'/>` +
+		`<wpt d:lat="5" lat="47" lon="122"/></gpx>`
+	if buf.String() != want {
+		t.Errorf("clean output:\n%s\nwant\n%s", buf.String(), want)
+	}
+}

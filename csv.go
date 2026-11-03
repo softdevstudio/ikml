@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -18,6 +19,7 @@ type csvInfo struct {
 	latCol, lonCol  int
 	delim           rune
 	badRows, ragged int
+	extra           int    // values past the header's columns in ragged rows
 	raw             []byte // the file as read; CSV output is this file, with fixed rows rewritten
 }
 
@@ -25,7 +27,9 @@ type csvInfo struct {
 type csvRow struct {
 	values     []string // as read, before padding a ragged row
 	orig       Coord
-	start, end int  // the record's bytes in csvInfo.raw, line ending included
+	start, end int    // the record's bytes in csvInfo.raw, line ending included
+	latSpan    [2]int // the latitude cell's bytes in csvInfo.raw, quotes included
+	lonSpan    [2]int
 	comma      bool // the latitude was written with a decimal comma
 }
 
@@ -125,7 +129,11 @@ func openCSV(d *Doc, data []byte) {
 	commaOK := ',' != delim
 	d.csv = info
 	if lat < 0 || lon < 0 {
-		d.issues.add("csv-no-coordinates", Loc{Line: 1}, 0, "The header row (%s) has no latitude and longitude columns. Name them lat and lon (or latitude and longitude) so iKML can place the rows.", strings.Join(header, ", "))
+		hint := ""
+		if bytes.IndexByte(data, '\r') >= 0 && bytes.IndexByte(data, '\n') < 0 {
+			hint = " The file ends its lines with CR only (old Mac style); save it with LF or CRLF line endings."
+		}
+		d.issues.add("csv-no-coordinates", Loc{Line: 1}, 0, "The header row (%s) has no latitude and longitude columns. Name them lat and lon (or latitude and longitude) so iKML can place the rows.%s", strings.Join(header, ", "), hint)
 		d.fatal = true
 		return
 	}
@@ -165,6 +173,20 @@ func openCSV(d *Doc, data []byte) {
 		}
 		seen[r] = true
 	}
+	// Byte offset of each line, so field positions become offsets.
+	lineStart := []int{0}
+	for i, b := range data {
+		if b == '\n' {
+			lineStart = append(lineStart, i+1)
+		}
+	}
+	offset := func(line, col int) int {
+		if line < 1 || line > len(lineStart) {
+			return -1
+		}
+		return bom + lineStart[line-1] + col - 1
+	}
+	rowNo := 0
 	for {
 		start := bom + int(r.InputOffset())
 		rec, err := r.Read()
@@ -186,8 +208,26 @@ func openCSV(d *Doc, data []byte) {
 			continue
 		}
 		orig := append([]string(nil), rec...)
+		rowNo++
+		// The byte range of field i, without its delimiter or line ending.
+		span := func(i int) [2]int {
+			l, c := r.FieldPos(i)
+			a := offset(l, c)
+			b := len(bytes.TrimRight(raw[:end], "\r\n"))
+			if i+1 < len(orig) {
+				l2, c2 := r.FieldPos(i + 1)
+				b = offset(l2, c2) - 1
+			}
+			if a < start || b < a || b > end {
+				return [2]int{-1, -1}
+			}
+			return [2]int{a, b}
+		}
 		if len(rec) != len(header) {
 			info.ragged++
+			if len(rec) > len(header) {
+				info.extra += len(rec) - len(header)
+			}
 			d.issues.add("csv-ragged-row", Loc{Line: line}, 0, "Row at line %d has %d values; the header has %d columns.", line, len(rec), len(header))
 			for len(rec) < len(header) {
 				rec = append(rec, "")
@@ -202,7 +242,7 @@ func openCSV(d *Doc, data []byte) {
 			continue
 		}
 		c := Coord{Lon: lo, Lat: la}
-		pm := &Placemark{Path: fmt.Sprintf("/row[%d]", line), Line: line}
+		pm := &Placemark{Path: fmt.Sprintf("/row[%d]", rowNo), Line: line}
 		for i, v := range rec {
 			switch roles[i] {
 			case "coord":
@@ -223,51 +263,54 @@ func openCSV(d *Doc, data []byte) {
 			}
 		}
 		pm.Geometry = &Geometry{Type: "Point", Coords: []Coord{c}, Line: line}
-		pm.csv = &csvRow{values: orig, orig: c, start: start, end: end,
+		pm.csv = &csvRow{values: orig, orig: c, start: start, end: end, latSpan: span(lat), lonSpan: span(lon),
 			comma: commaOK && strings.Contains(rec[lat], ",")}
 		d.Root.Items = append(d.Root.Items, Item{Placemark: pm})
 	}
 }
 
 // writeCSVSource writes a CSV source as it was, byte for byte, except for
-// the rows whose coordinates clean changed: those are written again in the
-// source's delimiter and line ending.
+// the latitude and longitude cells that clean changed, which are replaced
+// in place.
 func writeCSVSource(d *Doc, w io.Writer) error {
 	info := d.csv
-	bw := bufio.NewWriter(w)
-	pos := 0
+	var edits []edit
 	for _, pm := range d.Placemarks() {
 		row := pm.csv
 		if row == nil || pm.Geometry == nil || len(pm.Geometry.Coords) == 0 {
 			continue
 		}
 		c := pm.Geometry.Coords[0]
-		if (c.Lat == row.orig.Lat && c.Lon == row.orig.Lon) || row.start < pos {
+		cell := func(v float64, sp [2]int) {
+			if sp[0] < 0 {
+				return
+			}
+			t := formatFloat(v)
+			if row.comma {
+				t = strings.Replace(t, ".", ",", 1)
+			}
+			if sp[1] > sp[0] && info.raw[sp[0]] == '"' {
+				t = `"` + t + `"`
+			}
+			edits = append(edits, edit{sp[0], sp[1], t})
+		}
+		if c.Lat != row.orig.Lat {
+			cell(c.Lat, row.latSpan)
+		}
+		if c.Lon != row.orig.Lon {
+			cell(c.Lon, row.lonSpan)
+		}
+	}
+	sort.Slice(edits, func(a, b int) bool { return edits[a].start < edits[b].start })
+	bw := bufio.NewWriter(w)
+	pos := 0
+	for _, e := range edits {
+		if e.start < pos {
 			continue
 		}
-		vals := append([]string(nil), row.values...)
-		lat, lon := formatFloat(c.Lat), formatFloat(c.Lon)
-		if row.comma {
-			lat, lon = strings.Replace(lat, ".", ",", 1), strings.Replace(lon, ".", ",", 1)
-		}
-		if info.latCol < len(vals) {
-			vals[info.latCol] = lat
-		}
-		if info.lonCol < len(vals) {
-			vals[info.lonCol] = lon
-		}
-		var rec bytes.Buffer
-		cw := csv.NewWriter(&rec)
-		cw.Comma = info.delim
-		cw.Write(vals)
-		cw.Flush()
-		line := bytes.TrimSuffix(rec.Bytes(), []byte("\n"))
-		orig := info.raw[row.start:row.end]
-		ending := orig[len(bytes.TrimRight(orig, "\r\n")):]
-		bw.Write(info.raw[pos:row.start])
-		bw.Write(line)
-		bw.Write(ending)
-		pos = row.end
+		bw.Write(info.raw[pos:e.start])
+		bw.WriteString(e.text)
+		pos = e.end
 	}
 	bw.Write(info.raw[pos:])
 	return bw.Flush()
@@ -468,9 +511,20 @@ func lossFromCSV(d *Doc, target string) []Loss {
 	if target == "csv" {
 		return out
 	}
-	fields := 0
+	if info := d.csv; info != nil {
+		if info.badRows > 0 {
+			out = append(out, Loss{What: "Rows without coordinates", Count: info.badRows, Outcome: "lost", Detail: "Rows whose latitude or longitude can't be read are left out (csv-bad-row)."})
+		}
+		if info.extra > 0 {
+			out = append(out, Loss{What: "Values past the last column", Count: info.extra, Outcome: "lost", Detail: "Ragged rows with more values than the header has columns lose the extra values (csv-ragged-row)."})
+		}
+	}
+	fields, cols := 0, map[string]bool{}
 	for _, pm := range d.Placemarks() {
 		fields += len(pm.Fields)
+		for _, f := range pm.Fields {
+			cols[f.Name] = true
+		}
 	}
 	if fields > 0 {
 		where := "properties"
@@ -478,10 +532,10 @@ func lossFromCSV(d *Doc, target string) []Loss {
 			where = "ExtendedData values"
 		}
 		if target == "gpx" {
-			out = append(out, Loss{What: "Other columns", Count: fields, Outcome: "lost", Detail: "GPX waypoints keep a name, description, time and elevation. Other columns are dropped."})
+			out = append(out, Loss{What: "Other column values", Count: fields, Outcome: "lost", Detail: fmt.Sprintf("GPX waypoints keep a name, description, time and elevation. The values of %d other %s are dropped.", len(cols), plural(len(cols), "column", "columns"))})
 			return out
 		}
-		out = append(out, Loss{What: "Other columns", Count: fields, Outcome: "changed", Detail: "Every other column is written as " + where + " under its header name. CSV values are text, so numbers come out as strings."})
+		out = append(out, Loss{What: "Other column values", Count: fields, Outcome: "changed", Detail: fmt.Sprintf("%d other %s", len(cols), plural(len(cols), "column", "columns")) + ": every other column is written as " + where + " under its header name. CSV values are text, so numbers come out as strings."})
 	}
 	return out
 }
