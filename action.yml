@@ -1,0 +1,219 @@
+name: iKML check
+description: Check the KML, KMZ, GeoJSON, GPX and CSV map files in a repository, annotate each problem on its file and line, and fail the check when a file has errors.
+author: iKML
+branding:
+  icon: map
+  color: green
+
+inputs:
+  path:
+    description: A folder (checked with every map file inside, symlinks not followed, dot folders skipped) or one file, relative to the workspace.
+    required: false
+    default: "."
+  fail:
+    description: Fail the step when a file has errors or can't be read. Set to false to report only. A usage or install error always fails.
+    required: false
+    default: "true"
+  strict:
+    description: Treat warnings like errors.
+    required: false
+    default: "false"
+  annotate:
+    description: Write a GitHub annotation for each error and warning.
+    required: false
+    default: "true"
+  version:
+    description: "iKML release to use (v0.2.0 or later), or latest. Empty means the release this action belongs to (softdevstudio/ikml@v0.2.0 runs 0.2.0), or the latest when that one isn't published."
+    required: false
+    default: ""
+  ikml-path:
+    description: Use this ikml binary instead of downloading one (for testing the action itself).
+    required: false
+    default: ""
+
+outputs:
+  result:
+    description: "ok (no errors), issues (errors, unreadable files, or warnings with strict) or error (the check couldn't run)"
+    value: ${{ steps.run.outputs.result }}
+  exit-code:
+    description: "ikml's exit code: 0 no errors, 1 errors found, 2 usage or read error"
+    value: ${{ steps.run.outputs.exit-code }}
+  files:
+    description: Number of files checked
+    value: ${{ steps.run.outputs.files }}
+  errors:
+    description: Number of errors
+    value: ${{ steps.run.outputs.errors }}
+  warnings:
+    description: Number of warnings
+    value: ${{ steps.run.outputs.warnings }}
+  report:
+    description: File holding ikml's JSON report
+    value: ${{ steps.run.outputs.report }}
+  version:
+    description: The release the action ran (its vX.Y.Z tag, also when version is latest, or local)
+    value: ${{ steps.install.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ikml
+      id: install
+      shell: bash
+      env:
+        IK_VERSION: ${{ inputs.version }}
+        IK_PATH: ${{ inputs.ikml-path }}
+      run: |
+        set -euo pipefail
+        if [ -n "$IK_PATH" ]; then
+          "$IK_PATH" version
+          echo "bin=$IK_PATH" >> "$GITHUB_OUTPUT"
+          echo "version=local" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # The release this copy of the action belongs to is the VERSION file
+        # a tag of this repository carries.
+        own=""
+        if [ -z "$IK_VERSION" ]; then
+          own="v$(tr -d '[:space:]' < "$GITHUB_ACTION_PATH/VERSION")"
+          [[ "$own" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || own=""
+          IK_VERSION="${own:-latest}"
+        fi
+        if [ "$IK_VERSION" != latest ] && ! [[ "$IK_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::version must be latest or a vX.Y.Z tag, not $IK_VERSION"; exit 1
+        fi
+        case "$RUNNER_OS" in
+          Linux) os=linux ;; macOS) os=darwin ;; Windows) os=windows ;;
+          *) echo "::error::ikml has no build for $RUNNER_OS"; exit 1 ;;
+        esac
+        case "$RUNNER_ARCH" in
+          X64) arch=amd64 ;; ARM64) arch=arm64 ;;
+          *) echo "::error::ikml has no build for $RUNNER_ARCH"; exit 1 ;;
+        esac
+        if [ "$os" = windows ] && [ "$arch" != amd64 ]; then echo "::error::ikml has no Windows $arch build"; exit 1; fi
+        ext=tar.gz; [ "$os" = windows ] && ext=zip
+        name="ikml_${os}_${arch}.${ext}"
+        dir="$RUNNER_TEMP/ikml-bin"
+        rm -rf "$dir"
+        mkdir -p "$dir"
+        cd "$dir"
+        # latest is resolved to one tag first, so the archive and SHA256SUMS
+        # come from the same release even if one is published meanwhile.
+        resolve() {
+          if [ "$1" != latest ]; then echo "$1"; return; fi
+          curl -fsSLI --retry 3 -o /dev/null -w '%{url_effective}' https://github.com/softdevstudio/ikml/releases/latest | sed 's#.*/tag/##'
+        }
+        get() { curl -fsSL --retry 3 -o "$2" "https://github.com/softdevstudio/ikml/releases/download/$1/$2"; }
+        tag=$(resolve "$IK_VERSION") || tag=""
+        if [ -n "$tag" ] && get "$tag" "$name"; then :
+        elif [ -n "$own" ] && [ "$IK_VERSION" = "$own" ] && [ "$(curl -s --retry 3 -o /dev/null -w '%{http_code}' "https://github.com/softdevstudio/ikml/releases/tag/$own")" = 404 ]; then
+          # A copy of the action from main can name a version not published
+          # yet. Only a release confirmed missing falls back to the latest; a
+          # failed download of one that exists is an error.
+          echo "::notice::$IK_VERSION isn't published; using the latest release"
+          tag=$(resolve latest) || tag=""
+          [ -n "$tag" ] && get "$tag" "$name" || { echo "::error::could not download the latest $name"; exit 1; }
+        else
+          echo "::error::could not download $name of $IK_VERSION"; exit 1
+        fi
+        if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::latest resolved to $tag, not a release tag"; exit 1; fi
+        get "$tag" SHA256SUMS || { echo "::error::could not download SHA256SUMS of $tag"; exit 1; }
+        want=$(awk -v n="$name" '$2==n || $2=="*"n {print $1}' SHA256SUMS)
+        if command -v sha256sum >/dev/null; then got=$(sha256sum "$name" | cut -d' ' -f1); else got=$(shasum -a 256 "$name" | cut -d' ' -f1); fi
+        if [ -z "$want" ] || [ "$want" != "$got" ]; then echo "::error::$name does not match SHA256SUMS"; exit 1; fi
+        if [ "$ext" = zip ]; then unzip -oq "$name"; bin="$dir/ikml.exe"; else tar -xzf "$name"; bin="$dir/ikml"; fi
+        "$bin" version
+        echo "bin=$bin" >> "$GITHUB_OUTPUT"
+        echo "version=$tag" >> "$GITHUB_OUTPUT"
+
+    - name: Check the map files
+      id: run
+      shell: bash
+      env:
+        IK_BIN: ${{ steps.install.outputs.bin }}
+        IN_PATH: ${{ inputs.path }}
+        IN_FAIL: ${{ inputs.fail }}
+        IN_STRICT: ${{ inputs.strict }}
+        IN_ANNOTATE: ${{ inputs.annotate }}
+      run: |
+        # The runner starts bash with -e; ikml exits 1 when it finds errors,
+        # which must not end the step before the result is recorded.
+        set +e -u
+        report="$RUNNER_TEMP/ikml-report-$GITHUB_ACTION.json"
+        echo "report=$report" >> "$GITHUB_OUTPUT"
+        error() {
+          echo "::error::ikml: $1"
+          echo "result=error" >> "$GITHUB_OUTPUT"; echo "exit-code=${2:-2}" >> "$GITHUB_OUTPUT"
+          exit 0
+        }
+        # A typo in a switch must not let errors pass, so only true and false count.
+        for v in "fail=$IN_FAIL" "strict=$IN_STRICT" "annotate=$IN_ANNOTATE"; do
+          case "${v#*=}" in true|false) ;; *) error "${v%%=*} must be true or false, not ${v#*=}" ;; esac
+        done
+        [ -e "$IN_PATH" ] || error "path $IN_PATH does not exist"
+        args=(check "$IN_PATH" --json)
+        [ "$IN_STRICT" = true ] && args+=(--strict)
+        "$IK_BIN" "${args[@]}" > "$report" 2> "$RUNNER_TEMP/ikml-err-$GITHUB_ACTION"
+        code=$?
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        case $code in 0|1) ;; *) error "$(head -c 2000 "$RUNNER_TEMP/ikml-err-$GITHUB_ACTION")" "$code" ;; esac
+        # One file gives a single report, named by its base name; a folder
+        # gives files and totals. Normalize to the folder form, with the path
+        # as given so annotations land on the file.
+        norm=$(jq -c --arg p "$IN_PATH" 'if has("files") then . else {files: [. + {file: $p}], skipped: [], totals: {files: 1, skipped: 0, unreadable: (if .readable then 0 else 1 end), errors: .errors, warnings: .warnings, infos: .infos}} end' "$report") || error "could not read ikml's report"
+        [ -n "$norm" ] || error "ikml printed no report"
+        files=$(printf '%s' "$norm" | jq '.totals.files')
+        errors=$(printf '%s' "$norm" | jq '.totals.errors')
+        warnings=$(printf '%s' "$norm" | jq '.totals.warnings')
+        unreadable=$(printf '%s' "$norm" | jq '.totals.unreadable')
+        echo "files=$files" >> "$GITHUB_OUTPUT"
+        echo "errors=$errors" >> "$GITHUB_OUTPUT"
+        echo "warnings=$warnings" >> "$GITHUB_OUTPUT"
+        if [ "$IN_ANNOTATE" = true ]; then
+          # Workflow command escaping: data takes %, CR and LF; properties
+          # also take : and ,.
+          printf '%s' "$norm" | jq -r '
+            def data: gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+            def prop: data | gsub(":"; "%3A") | gsub(","; "%2C");
+            .files[] as $f
+            | ($f.issues // [])[]
+            | select(.severity == "error" or .severity == "warning")
+            | "::\(if .severity == "error" then "error" else "warning" end) file=\($f.file | prop)\(if (.line // 0) > 0 then ",line=\(.line)" else "" end),title=\(.code | prop)::\((if .location then .location + ": " else "" end) + .message | data)"' | head -n 500
+          printf '%s' "$norm" | jq -r '
+            def data: gsub("%"; "%25") | gsub("\r"; "%0D") | gsub("\n"; "%0A");
+            def prop: data | gsub(":"; "%3A") | gsub(","; "%2C");
+            .files[] | select(.error) | "::error file=\(.file | prop),title=unreadable::\(.error | data)"'
+        fi
+        if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+          {
+            echo "### iKML check"
+            echo
+            echo "$files file(s) checked: $errors error(s), $warnings warning(s), $unreadable unreadable."
+            echo
+            echo "| File | Format | Errors | Warnings |"
+            echo "| --- | --- | ---: | ---: |"
+            printf '%s' "$norm" | jq -r '
+              def cell: gsub("[\r\n]"; " ") | gsub("\\|"; "\\|") | .[0:200];
+              .files[] | select((.errors // 0) + (.warnings // 0) > 0 or .error) | "| \(.file | cell) | \(.format // "unreadable") | \(.errors) | \(.warnings) |"' | head -n 300
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+        result=ok
+        if [ "$errors" -gt 0 ] || [ "$unreadable" -gt 0 ] || { [ "$IN_STRICT" = true ] && [ "$warnings" -gt 0 ]; }; then result=issues; fi
+        echo "result=$result" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Verdict
+      shell: bash
+      env:
+        RESULT: ${{ steps.run.outputs.result }}
+        FAIL: ${{ inputs.fail }}
+        ERRORS: ${{ steps.run.outputs.errors }}
+        WARNINGS: ${{ steps.run.outputs.warnings }}
+      run: |
+        case "$RESULT" in
+          ok) echo "ikml: no errors ($WARNINGS warning(s))" ;;
+          issues)
+            if [ "$FAIL" = true ]; then echo "::error::ikml: $ERRORS error(s), $WARNINGS warning(s); see the annotations"; exit 1; fi
+            echo "ikml: $ERRORS error(s), $WARNINGS warning(s) (fail: false, so the step passes)" ;;
+          *) echo "::error::ikml couldn't run the check; see the log above"; exit 1 ;;
+        esac

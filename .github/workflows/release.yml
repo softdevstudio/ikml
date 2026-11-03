@@ -99,6 +99,13 @@ jobs:
           grep -q FeatureCollection out.geojson
           $b clean testdata/bad/unclosed-ring.kml clean.kml
           $b inspect testdata/good/dji-mission.kmz
+          $b check testdata/good
+          $b convert testdata/good/strava.gpx ride.kml
+          grep -q "gx:Track" ride.kml
+          $b convert ride.kml ride.gpx
+          grep -q "<trkpt" ride.gpx
+          $b convert testdata/good/stations.csv stations.gpx
+          grep -q "<wpt" stations.gpx
       - name: Package
         run: |
           set -eux
