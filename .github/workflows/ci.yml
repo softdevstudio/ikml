@@ -40,7 +40,7 @@ jobs:
           }
       - name: Fuzz smoke
         run: |
-          for f in FuzzOpenKML FuzzOpenKMZ FuzzOpenGeoJSON FuzzParseCoordinates; do
+          for f in FuzzOpenKML FuzzOpenKMZ FuzzOpenGeoJSON FuzzOpenGPX FuzzOpenCSV FuzzParseCoordinates; do
             go test -run '^$' -fuzz "^$f\$" -fuzztime 10s . || { echo "::error::$f found a crash"; exit 1; }
           done
 

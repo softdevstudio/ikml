@@ -1,4 +1,4 @@
-// Command ikml shows what is inside a KML, KMZ or GeoJSON file, flags
+// Command ikml shows what is inside a KML, KMZ, GeoJSON, GPX or CSV file, flags
 // what is broken, explains what a conversion will lose, and writes
 // cleaned copies.
 package main
@@ -40,8 +40,9 @@ const usage = `ikml: understand a geographic file before importing it.
 Usage:
   ikml inspect FILE [--json]            show what is inside the file
   ikml check FILE [--json] [--strict]   list problems; exit 1 if errors found
+  ikml check DIR [--json] [--strict]    check every map file in a folder
   ikml convert IN OUT [--report] [--json]
-                                        convert by OUT extension (.geojson, .json, .kml, .kmz)
+                                        convert by OUT extension (.geojson, .json, .kml, .kmz, .gpx, .csv)
   ikml clean IN OUT [--fix-swapped] [--drop-unused] [--report] [--json]
                                         apply safe fixes and write a cleaned copy
   ikml codes [--json]                   list every issue code
@@ -117,6 +118,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		if len(o.args) != 1 {
 			return fail("%s needs exactly one FILE\n\n%s", cmd, usage)
+		}
+		if st, err := os.Stat(o.args[0]); cmd == "check" && o.args[0] != "-" && err == nil && st.IsDir() {
+			return checkDir(o.args[0], o, stdout, stderr)
 		}
 		d, err := load(o.args[0])
 		if err != nil {

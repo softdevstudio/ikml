@@ -19,7 +19,7 @@ func exercise(t *testing.T, data []byte) {
 	if r.Issues == nil {
 		t.Fatal("nil issues")
 	}
-	for _, target := range []string{"geojson", "kml", "kmz"} {
+	for _, target := range []string{"geojson", "kml", "kmz", "gpx", "csv"} {
 		LossReport(d, target)
 	}
 	Preview(d, 500)
@@ -36,6 +36,31 @@ func exercise(t *testing.T, data []byte) {
 	b.Reset()
 	if err := WriteKML(d, &b); err != nil {
 		t.Fatal(err)
+	}
+	b.Reset()
+	if err := WriteGPX(d, &b); err != nil {
+		t.Fatal(err)
+	}
+	g, err := Open("out.gpx", b.Bytes())
+	if err != nil || !g.Readable() || g.Format != FormatGPX {
+		t.Fatalf("GPX output does not read back: %v\n%s", err, b.String())
+	}
+	if d.Format == FormatGPX {
+		// GPX written from GPX is stable.
+		var again bytes.Buffer
+		WriteGPX(g, &again)
+		if !bytes.Equal(again.Bytes(), b.Bytes()) {
+			t.Fatalf("GPX output changes on a second pass:\n%s\n%s", b.String(), again.String())
+		}
+	}
+	b.Reset()
+	if err := WriteCSV(d, &b); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Count(b.Bytes(), []byte("\n")) > 1 {
+		if c, err := Open("out.csv", b.Bytes()); err != nil || !c.Readable() {
+			t.Fatalf("CSV output does not read back: %v\n%s", err, b.String())
+		}
 	}
 	c, _, err := Clean(d, CleanOptions{FixSwapped: true, DropUnusedAssets: true})
 	if err != nil {
@@ -74,6 +99,20 @@ func FuzzOpenGeoJSON(f *testing.F) {
 	seed(f, "testdata/*/*.geojson")
 	f.Add([]byte(`{"type":"GeometryCollection","geometries":[{"type":"GeometryCollection","geometries":[]}]}`))
 	f.Add([]byte(`{"type":"Feature","properties":{"coordTimes":["a","b"]},"geometry":{"type":"LineString","coordinates":[[1,2],[3,4]]}}`))
+	f.Fuzz(exercise)
+}
+
+func FuzzOpenGPX(f *testing.F) {
+	seed(f, "testdata/*/*.gpx")
+	f.Add([]byte(`<gpx version="1.1"><trk><trkseg><trkpt lat="1" lon="2"><time>x</time></trkpt></trkseg><trkseg/></trk><rte><rtept lat="a" lon="b"/></rte></gpx>`))
+	f.Add([]byte(`<g:gpx xmlns:g="http://www.topografix.com/GPX/1/1"><g:wpt lat="1" lon="2"><g:extensions><a><b>1</b></a></g:extensions></g:wpt></g:gpx>`))
+	f.Fuzz(exercise)
+}
+
+func FuzzOpenCSV(f *testing.F) {
+	seed(f, "testdata/*/*.csv")
+	f.Add([]byte("lat;lon;name\n1,5;2,5;\"a;b\"\n"))
+	f.Add([]byte("x\ty\n1\t2\n\n3\n"))
 	f.Fuzz(exercise)
 }
 

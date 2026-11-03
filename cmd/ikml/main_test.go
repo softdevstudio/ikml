@@ -36,7 +36,9 @@ func TestExitCodes(t *testing.T) {
 		{[]string{"check", "a", "b"}, 2},
 		{[]string{"check", td + "missing.kml"}, 2},
 		{[]string{"check", td + "good/earth-pro-export.kml", "--bogus"}, 2},
-		{[]string{"check", td + "good"}, 2},
+		{[]string{"check", td + "good"}, 0},
+		{[]string{"check", td + "bad"}, 1},
+		{[]string{"inspect", td + "good"}, 2},
 		{[]string{"check", td + "good/qgis-export.kml"}, 0},
 		{[]string{"check", td + "good/qgis-export.kml", "--strict"}, 0},
 		{[]string{"check", td + "good/earth-pro-export.kml"}, 0},
@@ -186,5 +188,78 @@ func TestKMLToKMZBundlesFiles(t *testing.T) {
 	code, stdout, _ := runCLI("check", out)
 	if code != 0 || strings.Contains(stdout, "kmz-missing-asset") {
 		t.Errorf("bundled kmz: %d\n%s", code, stdout)
+	}
+}
+
+func TestCheckDir(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) {
+		p := filepath.Join(dir, name)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gpx, _ := os.ReadFile(td + "good/strava.gpx")
+	write("maps/ride.gpx", string(gpx))
+	write("maps/stops.csv", "name,lat,lon\nA,1,2\n")
+	write("package.json", `{"name":"site","version":"1.0.0"}`)
+	write("data/prices.csv", "item,price\napple,3\n")
+	write("maps/broken.kml", "<kml><Placemark><Point><coordinates>200,95</coordinates></Point></Placemark></kml>")
+	write(".git/ignored.kml", "<kml/>")
+	write("notes.txt", "not a map")
+	code, out, errs := runCLI("check", dir, "--json")
+	if code != 1 {
+		t.Errorf("exit %d (%s)", code, errs)
+	}
+	var r batchJSON
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if r.Totals.Files != 3 || r.Totals.Skipped != 2 || r.Totals.Errors != 2 {
+		t.Errorf("totals %+v", r.Totals)
+	}
+	for _, f := range r.Files {
+		if !strings.HasPrefix(f.File, filepath.ToSlash(dir)+"/maps/") {
+			t.Errorf("unexpected file %s", f.File)
+		}
+		if strings.HasSuffix(f.File, "broken.kml") && (f.Errors != 2 || len(f.Issues) == 0 || f.Issues[0].Line == 0) {
+			t.Errorf("broken.kml: %+v", f)
+		}
+	}
+	os.Remove(filepath.Join(dir, "maps/broken.kml"))
+	if code, out, _ := runCLI("check", dir); code != 0 || !strings.Contains(out, "2 file(s) checked, 2 skipped") {
+		t.Errorf("text mode: %d\n%s", code, out)
+	}
+	write("maps/late.gpx", `<gpx version="1.1"><trk><trkseg><trkpt lat="1" lon="2"><time>2026-01-01T10:00:00Z</time></trkpt><trkpt lat="1" lon="2.1"><time>2026-01-01T09:00:00Z</time></trkpt></trkseg></trk></gpx>`)
+	if code, _, _ := runCLI("check", dir); code != 0 {
+		t.Errorf("warnings alone fail without --strict: %d", code)
+	}
+	if code, _, _ := runCLI("check", dir, "--strict"); code != 1 {
+		t.Errorf("--strict with warnings: %d", code)
+	}
+}
+
+func TestConvertGPXAndCSV(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "ride.geojson")
+	code, stdout, errs := runCLI("convert", td+"good/garmin-connect.gpx", out, "--report")
+	if code != 0 || !strings.Contains(stdout, "Track point extensions") || !strings.Contains(stdout, "hr (40)") {
+		t.Fatalf("convert: %d %s %s", code, stdout, errs)
+	}
+	back := filepath.Join(dir, "ride.gpx")
+	if code, _, errs := runCLI("convert", out, back); code != 0 {
+		t.Fatalf("back to GPX: %d %s", code, errs)
+	}
+	if code, _, _ := runCLI("check", back); code != 0 {
+		t.Errorf("the GPX written back has errors")
+	}
+	csv := filepath.Join(dir, "stops.csv")
+	if code, stdout, errs := runCLI("convert", td+"good/hike-plan.gpx", csv, "--report"); code != 0 || !strings.Contains(stdout, "Routes and tracks") {
+		t.Fatalf("to CSV: %d %s %s", code, stdout, errs)
+	}
+	b, _ := os.ReadFile(csv)
+	if !strings.HasPrefix(string(b), "name,lat,lon,ele,time,description,cmt,link,sym\n") {
+		t.Errorf("CSV:\n%s", b)
 	}
 }

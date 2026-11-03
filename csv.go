@@ -214,6 +214,8 @@ func WriteCSV(d *Doc, w io.Writer) error {
 	cw := csv.NewWriter(w)
 	if d.csv != nil {
 		info := d.csv
+		// The source's own delimiter, so decimal commas stay readable.
+		cw.Comma = info.delim
 		cw.Write(info.header)
 		for _, pm := range d.Placemarks() {
 			if pm.csv == nil || pm.Geometry == nil || len(pm.Geometry.Coords) == 0 {
@@ -222,8 +224,11 @@ func WriteCSV(d *Doc, w io.Writer) error {
 			row := append([]string(nil), pm.csv.values...)
 			c := pm.Geometry.Coords[0]
 			if c.Lat != pm.csv.orig.Lat || c.Lon != pm.csv.orig.Lon {
-				row[info.latCol] = formatFloat(c.Lat)
-				row[info.lonCol] = formatFloat(c.Lon)
+				lat, lon := formatFloat(c.Lat), formatFloat(c.Lon)
+				if info.decimalComma {
+					lat, lon = strings.Replace(lat, ".", ",", 1), strings.Replace(lon, ".", ",", 1)
+				}
+				row[info.latCol], row[info.lonCol] = lat, lon
 			}
 			cw.Write(row)
 		}
@@ -245,15 +250,20 @@ func WriteCSV(d *Doc, w io.Writer) error {
 		}
 		name, desc, ts := gpxText(pm)
 		fields := csvFields(pm)
-		for _, f := range fields {
-			if !seen[f.Name] {
-				seen[f.Name] = true
-				names = append(names, f.Name)
-			}
-		}
+		added := false
 		for _, l := range pm.Geometry.leaves() {
 			if l.Type != "Point" || len(l.Coords) == 0 {
 				continue
+			}
+			if !added {
+				// Columns come only from placemarks that give a row.
+				added = true
+				for _, f := range fields {
+					if !seen[f.Name] {
+						seen[f.Name] = true
+						names = append(names, f.Name)
+					}
+				}
 			}
 			p := point{c: l.Coords[0], name: name, desc: desc, ts: ts, fields: fields}
 			hasEle = hasEle || p.c.Has3
