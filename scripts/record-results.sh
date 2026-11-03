@@ -28,7 +28,7 @@ scripts/build-wasm.sh > /dev/null
 
 echo "== fuzz ($fuzztime each)"
 : > "$res/fuzz.txt"
-for f in FuzzOpenKML FuzzOpenKMZ FuzzOpenGeoJSON FuzzParseCoordinates; do
+for f in FuzzOpenKML FuzzOpenKMZ FuzzOpenGeoJSON FuzzOpenGPX FuzzOpenCSV FuzzParseCoordinates; do
   echo "--- $f" >> "$res/fuzz.txt"
   go test -run '^$' -fuzz "^$f\$" -fuzztime "$fuzztime" . 2>&1 | grep -E "elapsed|PASS|FAIL|panic" | tail -3 >> "$res/fuzz.txt"
 done

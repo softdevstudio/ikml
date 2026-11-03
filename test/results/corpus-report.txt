@@ -31,6 +31,18 @@ earth-pro-export.kml (kml, 3.3 KiB)
 
 0 error(s), 1 warning(s), 1 note(s).
 
+$ ikml check testdata/good/europe-semicolon.csv
+europe-semicolon.csv (csv, 92 bytes)
+No problems found.
+
+$ ikml check testdata/good/garmin-connect.gpx
+garmin-connect.gpx (gpx, 14.5 KiB)
+
+  INFO    has-tracks
+          The file has 1 GPS track segment with a time for each point.
+
+0 error(s), 0 warning(s), 1 note(s).
+
 $ ikml check testdata/good/gps-track.kml
 gps-track.kml (kml, 1.5 KiB)
 
@@ -40,6 +52,19 @@ gps-track.kml (kml, 1.5 KiB)
           1 placemark carries a TimeStamp or TimeSpan.
 
 0 error(s), 0 warning(s), 2 note(s).
+
+$ ikml check testdata/good/hike-plan.gpx
+hike-plan.gpx (gpx, 1.7 KiB)
+
+  WARNING mixed-dimensions  /gpx/rte[1] (line 23)
+          The shape mixes 2 positions without altitude and 1 position with
+          altitude.
+  INFO    has-tracks
+          The file has 2 GPS track segments with a time for each point.
+  INFO    has-timestamps
+          1 placemark carries a TimeStamp or TimeSpan.
+
+0 error(s), 1 warning(s), 2 note(s).
 
 $ ikml check testdata/good/mymaps-export.kml
 mymaps-export.kml (kml, 3.4 KiB)
@@ -57,6 +82,18 @@ No problems found.
 $ ikml check testdata/good/qgis-export.kml
 qgis-export.kml (kml, 1.6 KiB)
 No problems found.
+
+$ ikml check testdata/good/stations.csv
+stations.csv (csv, 172 bytes)
+No problems found.
+
+$ ikml check testdata/good/strava.gpx
+strava.gpx (gpx, 19.0 KiB)
+
+  INFO    has-tracks
+          The file has 1 GPS track segment with a time for each point.
+
+0 error(s), 0 warning(s), 1 note(s).
 
 $ ikml check testdata/good/timespan-extrude.kml
 timespan-extrude.kml (kml, 568 bytes)
@@ -128,6 +165,20 @@ crs-clockwise.geojson (geojson, 615 bytes)
 1 error(s), 1 warning(s), 2 note(s).
 (exit 1)
 
+$ ikml check testdata/bad/csv-rows.csv
+csv-rows.csv (csv, 125 bytes)
+
+  WARNING csv-bad-row  line 3
+          Row at line 3 has latitude="" and longitude="12.5", which aren't both
+          numbers. It is left out.
+  WARNING csv-bad-row  line 4
+          Row at line 4 has latitude="forty" and longitude="12.5", which aren't
+          both numbers. It is left out.
+  WARNING csv-ragged-row  line 5
+          Row at line 5 has 3 values; the header has 4 columns.
+
+0 error(s), 3 warning(s), 0 note(s).
+
 $ ikml check testdata/bad/duplicate-ids.kml
 duplicate-ids.kml (kml, 615 bytes)
 
@@ -139,6 +190,27 @@ duplicate-ids.kml (kml, 615 bytes)
           This folder has nothing inside.
 
 0 error(s), 2 warning(s), 1 note(s).
+
+$ ikml check testdata/bad/gpx-problems.gpx
+gpx-problems.gpx (gpx, 612 bytes)
+
+  ERROR   coord-parse  /gpx/trk[1] (line 10)
+          A point's position can't be read: lat="north" lon="9.1940" are not
+          numbers. It is left out of every output.
+  WARNING gpx-version  /gpx (line 2)
+          The GPX version is "1.2". iKML reads it as GPX 1.1, the version it
+          knows.
+  WARNING gpx-time-invalid  /gpx/trk[1]/trkseg[1] (line 5)
+          1 time in this segment is not an RFC 3339 time such as
+          2026-05-01T07:30:00Z.
+  WARNING gpx-time-backwards  /gpx/trk[1]/trkseg[1] (line 5)
+          1 point in this segment is earlier than the point before. Speeds and
+          durations come out wrong.
+  INFO    has-tracks
+          The file has 1 GPS track segment with a time for each point.
+
+1 error(s), 3 warning(s), 1 note(s).
+(exit 1)
 
 $ ikml check testdata/bad/invalid.geojson
 invalid.geojson (geojson, 243 bytes)
@@ -219,6 +291,18 @@ network-link.kml (kml, 754 bytes)
           The file has 1 ScreenOverlay.
 
 0 error(s), 1 warning(s), 4 note(s).
+
+$ ikml check testdata/bad/no-coords.csv
+no-coords.csv (csv, 36 bytes)
+The file could not be read completely.
+
+  ERROR   csv-no-coordinates  line 1
+          The header row (name, city, country) has no latitude and longitude
+          columns. Name them lat and lon (or latitude and longitude) so iKML can
+          place the rows.
+
+1 error(s), 0 warning(s), 0 note(s).
+(exit 1)
 
 $ ikml check testdata/bad/no-kml.kmz
 no-kml.kmz (kmz, 476 bytes)

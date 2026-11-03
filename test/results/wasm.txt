@@ -1,4 +1,4 @@
-ikml.wasm bytes: 5169135
+ikml.wasm bytes: 5412844
 ok   version: 0.1.2
 ok   inspect finds swapped-latlon
 ok   good file has no errors: 0
@@ -7,5 +7,10 @@ ok   loss report for geojson
 ok   kmz opens: kmz
 ok   convert to geojson: mymaps-export.geojson
 ok   clean closes the ring: unclosed-ring-clean.kml
+ok   gpx opens: gpx
+ok   gpx loss report names the extensions
+ok   gpx to gpx keeps the power values: strava.gpx
+ok   csv opens: csv
+ok   gpx to csv: hike-plan.csv
 ok   garbage gives an error, not a crash
 wasm smoke test passed

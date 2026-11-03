@@ -1,15 +1,36 @@
+=== RUN   TestCSVRead
+--- PASS: TestCSVRead (0.00s)
+=== RUN   TestCSVRows
+--- PASS: TestCSVRows (0.00s)
+=== RUN   TestCSVNotCSV
+--- PASS: TestCSVNotCSV (0.00s)
+=== RUN   TestCSVRoundTrip
+--- PASS: TestCSVRoundTrip (0.00s)
+=== RUN   TestCSVFromOtherFormats
+--- PASS: TestCSVFromOtherFormats (0.00s)
+=== RUN   TestCSVCleanSwapped
+--- PASS: TestCSVCleanSwapped (0.00s)
+=== RUN   TestCSVKeepsEverything
+--- PASS: TestCSVKeepsEverything (0.00s)
+=== RUN   TestCSVDelimiterFindsCoordinates
+--- PASS: TestCSVDelimiterFindsCoordinates (0.00s)
+=== RUN   TestCSVLossesAndCellSplice
+--- PASS: TestCSVLossesAndCellSplice (0.00s)
 === RUN   TestDefectFixtures
 === RUN   TestDefectFixtures/altitude-clamped.kml
 === RUN   TestDefectFixtures/bad-positions.geojson
 === RUN   TestDefectFixtures/broken-style.kml
 === RUN   TestDefectFixtures/crs-clockwise.geojson
+=== RUN   TestDefectFixtures/csv-rows.csv
 === RUN   TestDefectFixtures/duplicate-ids.kml
+=== RUN   TestDefectFixtures/gpx-problems.gpx
 === RUN   TestDefectFixtures/invalid.geojson
 === RUN   TestDefectFixtures/kml21-namespace.kml
 === RUN   TestDefectFixtures/local-path.kmz
 === RUN   TestDefectFixtures/malformed.kml
 === RUN   TestDefectFixtures/nested-collection.geojson
 === RUN   TestDefectFixtures/network-link.kml
+=== RUN   TestDefectFixtures/no-coords.csv
 === RUN   TestDefectFixtures/no-kml.kmz
 === RUN   TestDefectFixtures/no-namespace.kml
 === RUN   TestDefectFixtures/null-island.kml
@@ -21,18 +42,21 @@
 === RUN   TestDefectFixtures/unclosed-ring.kml
 === RUN   TestDefectFixtures/unparseable-coords.kml
 === RUN   TestDefectFixtures/unsafe-entries.kmz
---- PASS: TestDefectFixtures (0.02s)
+--- PASS: TestDefectFixtures (0.01s)
     --- PASS: TestDefectFixtures/altitude-clamped.kml (0.00s)
     --- PASS: TestDefectFixtures/bad-positions.geojson (0.00s)
     --- PASS: TestDefectFixtures/broken-style.kml (0.00s)
     --- PASS: TestDefectFixtures/crs-clockwise.geojson (0.00s)
+    --- PASS: TestDefectFixtures/csv-rows.csv (0.00s)
     --- PASS: TestDefectFixtures/duplicate-ids.kml (0.00s)
+    --- PASS: TestDefectFixtures/gpx-problems.gpx (0.00s)
     --- PASS: TestDefectFixtures/invalid.geojson (0.00s)
     --- PASS: TestDefectFixtures/kml21-namespace.kml (0.00s)
     --- PASS: TestDefectFixtures/local-path.kmz (0.00s)
     --- PASS: TestDefectFixtures/malformed.kml (0.00s)
     --- PASS: TestDefectFixtures/nested-collection.geojson (0.00s)
     --- PASS: TestDefectFixtures/network-link.kml (0.00s)
+    --- PASS: TestDefectFixtures/no-coords.csv (0.00s)
     --- PASS: TestDefectFixtures/no-kml.kmz (0.00s)
     --- PASS: TestDefectFixtures/no-namespace.kml (0.00s)
     --- PASS: TestDefectFixtures/null-island.kml (0.00s)
@@ -49,46 +73,56 @@
 === RUN   TestGoodFixturesHaveNoErrors/clean.geojson
 === RUN   TestGoodFixturesHaveNoErrors/dji-mission.kmz
 === RUN   TestGoodFixturesHaveNoErrors/earth-pro-export.kml
+=== RUN   TestGoodFixturesHaveNoErrors/europe-semicolon.csv
+=== RUN   TestGoodFixturesHaveNoErrors/garmin-connect.gpx
 === RUN   TestGoodFixturesHaveNoErrors/gps-track.kml
+=== RUN   TestGoodFixturesHaveNoErrors/hike-plan.gpx
 === RUN   TestGoodFixturesHaveNoErrors/mymaps-export.kml
 === RUN   TestGoodFixturesHaveNoErrors/photo-tour.kmz
 === RUN   TestGoodFixturesHaveNoErrors/qgis-export.kml
+=== RUN   TestGoodFixturesHaveNoErrors/stations.csv
+=== RUN   TestGoodFixturesHaveNoErrors/strava.gpx
 === RUN   TestGoodFixturesHaveNoErrors/timespan-extrude.kml
---- PASS: TestGoodFixturesHaveNoErrors (0.01s)
+--- PASS: TestGoodFixturesHaveNoErrors (0.03s)
     --- PASS: TestGoodFixturesHaveNoErrors/arcgis-export.kml (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/clean.geojson (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/dji-mission.kmz (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/earth-pro-export.kml (0.00s)
+    --- PASS: TestGoodFixturesHaveNoErrors/europe-semicolon.csv (0.00s)
+    --- PASS: TestGoodFixturesHaveNoErrors/garmin-connect.gpx (0.01s)
     --- PASS: TestGoodFixturesHaveNoErrors/gps-track.kml (0.00s)
+    --- PASS: TestGoodFixturesHaveNoErrors/hike-plan.gpx (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/mymaps-export.kml (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/photo-tour.kmz (0.00s)
     --- PASS: TestGoodFixturesHaveNoErrors/qgis-export.kml (0.00s)
+    --- PASS: TestGoodFixturesHaveNoErrors/stations.csv (0.00s)
+    --- PASS: TestGoodFixturesHaveNoErrors/strava.gpx (0.01s)
     --- PASS: TestGoodFixturesHaveNoErrors/timespan-extrude.kml (0.00s)
 === RUN   TestFixtureContents
-=== RUN   TestFixtureContents/dji-mission.kmz
-=== RUN   TestFixtureContents/clean.geojson
 === RUN   TestFixtureContents/photo-tour.kmz
 === RUN   TestFixtureContents/earth-pro-export.kml
 === RUN   TestFixtureContents/mymaps-export.kml
 === RUN   TestFixtureContents/arcgis-export.kml
 === RUN   TestFixtureContents/qgis-export.kml
 === RUN   TestFixtureContents/gps-track.kml
+=== RUN   TestFixtureContents/dji-mission.kmz
+=== RUN   TestFixtureContents/clean.geojson
 --- PASS: TestFixtureContents (0.01s)
-    --- PASS: TestFixtureContents/dji-mission.kmz (0.00s)
-    --- PASS: TestFixtureContents/clean.geojson (0.00s)
     --- PASS: TestFixtureContents/photo-tour.kmz (0.00s)
     --- PASS: TestFixtureContents/earth-pro-export.kml (0.00s)
     --- PASS: TestFixtureContents/mymaps-export.kml (0.00s)
     --- PASS: TestFixtureContents/arcgis-export.kml (0.00s)
     --- PASS: TestFixtureContents/qgis-export.kml (0.00s)
     --- PASS: TestFixtureContents/gps-track.kml (0.00s)
+    --- PASS: TestFixtureContents/dji-mission.kmz (0.00s)
+    --- PASS: TestFixtureContents/clean.geojson (0.00s)
 === RUN   TestSchemaTypes
 --- PASS: TestSchemaTypes (0.00s)
 === RUN   TestLocationsAreSpecific
-    fixtures_test.go:223: swapped-one-placemark.kml: swapped-latlon at Placemark 'Typed in by hand', line 8
+    fixtures_test.go:226: swapped-one-placemark.kml: swapped-latlon at Placemark 'Typed in by hand', line 8
 --- PASS: TestLocationsAreSpecific (0.00s)
 === RUN   TestKMZFixturesMatchGenerator
---- PASS: TestKMZFixturesMatchGenerator (0.07s)
+--- PASS: TestKMZFixturesMatchGenerator (0.04s)
 === RUN   TestEveryCodeDocumented
 --- PASS: TestEveryCodeDocumented (0.00s)
 === RUN   TestOpenErrors
@@ -101,24 +135,60 @@
 --- PASS: TestNamespaces (0.00s)
 === RUN   TestReportCaps
 --- PASS: TestReportCaps (0.01s)
+=== RUN   TestGPXRoundTripUnchanged
+=== RUN   TestGPXRoundTripUnchanged/garmin-connect.gpx
+=== RUN   TestGPXRoundTripUnchanged/strava.gpx
+=== RUN   TestGPXRoundTripUnchanged/hike-plan.gpx
+--- PASS: TestGPXRoundTripUnchanged (0.02s)
+    --- PASS: TestGPXRoundTripUnchanged/garmin-connect.gpx (0.01s)
+    --- PASS: TestGPXRoundTripUnchanged/strava.gpx (0.01s)
+    --- PASS: TestGPXRoundTripUnchanged/hike-plan.gpx (0.00s)
+=== RUN   TestGPXKeepsEverything
+--- PASS: TestGPXKeepsEverything (0.00s)
+=== RUN   TestGPX10Metadata
+--- PASS: TestGPX10Metadata (0.00s)
+=== RUN   TestGPXExportsThroughOtherFormats
+=== RUN   TestGPXExportsThroughOtherFormats/hike-plan.gpx_via_geojson
+=== RUN   TestGPXExportsThroughOtherFormats/hike-plan.gpx_via_kml
+=== RUN   TestGPXExportsThroughOtherFormats/garmin-connect.gpx_via_geojson
+=== RUN   TestGPXExportsThroughOtherFormats/garmin-connect.gpx_via_kml
+=== RUN   TestGPXExportsThroughOtherFormats/strava.gpx_via_geojson
+=== RUN   TestGPXExportsThroughOtherFormats/strava.gpx_via_kml
+--- PASS: TestGPXExportsThroughOtherFormats (0.06s)
+    --- PASS: TestGPXExportsThroughOtherFormats/hike-plan.gpx_via_geojson (0.00s)
+    --- PASS: TestGPXExportsThroughOtherFormats/hike-plan.gpx_via_kml (0.00s)
+    --- PASS: TestGPXExportsThroughOtherFormats/garmin-connect.gpx_via_geojson (0.01s)
+    --- PASS: TestGPXExportsThroughOtherFormats/garmin-connect.gpx_via_kml (0.02s)
+    --- PASS: TestGPXExportsThroughOtherFormats/strava.gpx_via_geojson (0.01s)
+    --- PASS: TestGPXExportsThroughOtherFormats/strava.gpx_via_kml (0.01s)
+=== RUN   TestGPXToGeoJSONProperties
+--- PASS: TestGPXToGeoJSONProperties (0.00s)
+=== RUN   TestGPXFromKML
+--- PASS: TestGPXFromKML (0.00s)
+=== RUN   TestGPXProblems
+--- PASS: TestGPXProblems (0.00s)
+=== RUN   TestGPXCleanSwapped
+--- PASS: TestGPXCleanSwapped (0.00s)
+=== RUN   TestGPXSwapOnlyRealAttributes
+--- PASS: TestGPXSwapOnlyRealAttributes (0.00s)
 === RUN   TestRoundTripFixtures
---- PASS: TestRoundTripFixtures (0.05s)
+--- PASS: TestRoundTripFixtures (0.08s)
 === RUN   TestRoundTripRandom
     roundtrip_test.go:285: random round trips: 3000 generated KML files, KML to GeoJSON to KML, every position kept
---- PASS: TestRoundTripRandom (17.11s)
+--- PASS: TestRoundTripRandom (15.44s)
 === RUN   TestFormatFloatExact
     roundtrip_test.go:301: exact numbers: 200000 random floats written and read back bit for bit
---- PASS: TestFormatFloatExact (0.55s)
+--- PASS: TestFormatFloatExact (0.50s)
 === RUN   TestCleanIdempotent
---- PASS: TestCleanIdempotent (0.42s)
+--- PASS: TestCleanIdempotent (0.56s)
 === RUN   TestCleanSpecifics
 --- PASS: TestCleanSpecifics (0.02s)
 === RUN   TestLossReport
 --- PASS: TestLossReport (0.01s)
 === RUN   TestZipBomb
---- PASS: TestZipBomb (10.15s)
+--- PASS: TestZipBomb (9.23s)
 === RUN   TestPreview
---- PASS: TestPreview (0.30s)
+--- PASS: TestPreview (0.26s)
 === RUN   TestWriteKMZRefusesUnsafeNames
 --- PASS: TestWriteKMZRefusesUnsafeNames (0.04s)
 === RUN   TestCleanUnsafeKMZ
@@ -146,7 +216,7 @@
 === RUN   FuzzOpenKML/seed#19
 === RUN   FuzzOpenKML/seed#20
 === RUN   FuzzOpenKML/seed#21
---- PASS: FuzzOpenKML (0.04s)
+--- PASS: FuzzOpenKML (0.05s)
     --- PASS: FuzzOpenKML/seed#0 (0.00s)
     --- PASS: FuzzOpenKML/seed#1 (0.00s)
     --- PASS: FuzzOpenKML/seed#2 (0.00s)
@@ -182,7 +252,7 @@
 === RUN   FuzzOpenKMZ/seed#9
 === RUN   FuzzOpenKMZ/seed#10
 === RUN   FuzzOpenKMZ/seed#11
---- PASS: FuzzOpenKMZ (0.14s)
+--- PASS: FuzzOpenKMZ (0.12s)
     --- PASS: FuzzOpenKMZ/seed#0 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#1 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#2 (0.01s)
@@ -190,11 +260,11 @@
     --- PASS: FuzzOpenKMZ/seed#4 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#5 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#6 (0.01s)
-    --- PASS: FuzzOpenKMZ/seed#7 (0.03s)
+    --- PASS: FuzzOpenKMZ/seed#7 (0.01s)
     --- PASS: FuzzOpenKMZ/seed#8 (0.01s)
-    --- PASS: FuzzOpenKMZ/seed#9 (0.02s)
+    --- PASS: FuzzOpenKMZ/seed#9 (0.00s)
     --- PASS: FuzzOpenKMZ/seed#10 (0.00s)
-    --- PASS: FuzzOpenKMZ/seed#11 (0.00s)
+    --- PASS: FuzzOpenKMZ/seed#11 (0.01s)
 === RUN   FuzzOpenGeoJSON
 === RUN   FuzzOpenGeoJSON/seed#0
 === RUN   FuzzOpenGeoJSON/seed#1
@@ -211,6 +281,34 @@
     --- PASS: FuzzOpenGeoJSON/seed#4 (0.00s)
     --- PASS: FuzzOpenGeoJSON/seed#5 (0.00s)
     --- PASS: FuzzOpenGeoJSON/seed#6 (0.00s)
+=== RUN   FuzzOpenGPX
+=== RUN   FuzzOpenGPX/seed#0
+=== RUN   FuzzOpenGPX/seed#1
+=== RUN   FuzzOpenGPX/seed#2
+=== RUN   FuzzOpenGPX/seed#3
+=== RUN   FuzzOpenGPX/seed#4
+=== RUN   FuzzOpenGPX/seed#5
+--- PASS: FuzzOpenGPX (0.05s)
+    --- PASS: FuzzOpenGPX/seed#0 (0.00s)
+    --- PASS: FuzzOpenGPX/seed#1 (0.02s)
+    --- PASS: FuzzOpenGPX/seed#2 (0.00s)
+    --- PASS: FuzzOpenGPX/seed#3 (0.02s)
+    --- PASS: FuzzOpenGPX/seed#4 (0.00s)
+    --- PASS: FuzzOpenGPX/seed#5 (0.00s)
+=== RUN   FuzzOpenCSV
+=== RUN   FuzzOpenCSV/seed#0
+=== RUN   FuzzOpenCSV/seed#1
+=== RUN   FuzzOpenCSV/seed#2
+=== RUN   FuzzOpenCSV/seed#3
+=== RUN   FuzzOpenCSV/seed#4
+=== RUN   FuzzOpenCSV/seed#5
+--- PASS: FuzzOpenCSV (0.01s)
+    --- PASS: FuzzOpenCSV/seed#0 (0.00s)
+    --- PASS: FuzzOpenCSV/seed#1 (0.00s)
+    --- PASS: FuzzOpenCSV/seed#2 (0.00s)
+    --- PASS: FuzzOpenCSV/seed#3 (0.00s)
+    --- PASS: FuzzOpenCSV/seed#4 (0.00s)
+    --- PASS: FuzzOpenCSV/seed#5 (0.00s)
 === RUN   FuzzParseCoordinates
 === RUN   FuzzParseCoordinates/seed#0
 === RUN   FuzzParseCoordinates/seed#1
@@ -226,11 +324,11 @@
     --- PASS: FuzzParseCoordinates/seed#4 (0.00s)
     --- PASS: FuzzParseCoordinates/seed#5 (0.00s)
 PASS
-ok  	github.com/softdevstudio/ikml	29.974s
+ok  	github.com/softdevstudio/ikml	27.619s
 === RUN   TestVersion
 --- PASS: TestVersion (0.00s)
 === RUN   TestExitCodes
---- PASS: TestExitCodes (0.02s)
+--- PASS: TestExitCodes (0.05s)
 === RUN   TestCheckJSON
 --- PASS: TestCheckJSON (0.00s)
 === RUN   TestInspectJSON
@@ -238,9 +336,15 @@ ok  	github.com/softdevstudio/ikml	29.974s
 === RUN   TestConvertAndClean
 --- PASS: TestConvertAndClean (0.02s)
 === RUN   TestKMLToKMZBundlesFiles
---- PASS: TestKMLToKMZBundlesFiles (0.00s)
+--- PASS: TestKMLToKMZBundlesFiles (0.01s)
+=== RUN   TestCheckDir
+--- PASS: TestCheckDir (0.04s)
+=== RUN   TestCheckDirEdges
+--- PASS: TestCheckDirEdges (0.00s)
+=== RUN   TestConvertGPXAndCSV
+--- PASS: TestConvertGPXAndCSV (0.01s)
 PASS
-ok  	github.com/softdevstudio/ikml/cmd/ikml	1.059s
+ok  	github.com/softdevstudio/ikml/cmd/ikml	1.144s
 ?   	github.com/softdevstudio/ikml/internal/fixturegen	[no test files]
 ?   	github.com/softdevstudio/ikml/internal/fixtures	[no test files]
 ?   	github.com/softdevstudio/ikml/internal/refgen	[no test files]
