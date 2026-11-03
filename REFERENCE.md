@@ -28,6 +28,7 @@ warnings give 1 only with `--strict`, and info never does.
 | `kmz-missing-asset` | The document refers to a file (icon, image, overlay, model) that should be inside the KMZ but is not there. | Reported, not changed. |
 | `local-path-ref` | A reference points to a file on the creator's computer (file:///, C:\, /Users/, /home/ and similar). Nobody else can open it. | Reported, not changed. |
 | `kmz-unsafe-path` | A file inside the KMZ has a name that would unpack outside the folder: an absolute path, a drive letter or a .. step. A KMZ from a real mapping program never has one, and some unzip tools would write the file wherever the name points. | Fixed: the entry is left out of the cleaned copy, and iKML never writes such a name. |
+| `csv-no-coordinates` | The CSV has no latitude and longitude columns iKML can recognize (lat, latitude or y, and lon, lng, long, longitude or x), so it holds no places. | Reported, not changed. |
 | `style-missing` | A placemark uses a style (#id) that is not defined in the document. Viewers fall back to default styling. | Fixed: the broken styleUrl is removed. |
 
 ## Warnings
@@ -48,6 +49,11 @@ warnings give 1 only with `--strict`, and info never does.
 | `large-coordinate-count` | One placemark has more than 100,000 positions. Many web maps slow down or refuse shapes this large. | Reported, not changed. |
 | `track-times-mismatch` | A gx:Track has a different number of `<when>` times and `<gx:coord>` positions. KML requires one time per position. | Reported, not changed. |
 | `kmz-duplicate-entry` | The KMZ holds two files with the same name. Programs differ on which one they use. | Fixed: the first copy is kept. |
+| `gpx-time-invalid` | A GPX time is not an RFC 3339 time such as 2026-05-01T07:30:00Z. Programs that compute speed or duration skip it or reject the file. | Reported, not changed. |
+| `gpx-time-backwards` | A track point has an earlier time than the point before it in the same segment, usually from a clock jump or two recordings joined together. Speeds and durations come out wrong. | Reported, not changed. |
+| `gpx-version` | The `<gpx>` root has no version attribute, or one other than 1.0 or 1.1. iKML reads the file as GPX 1.1. | Reported, not changed. |
+| `csv-bad-row` | A CSV row's latitude or longitude is empty or not a number. The row is left out. | Reported, not changed. |
+| `csv-ragged-row` | A CSV row has more or fewer values than the header has columns. Missing values are read as empty and extra ones are dropped. | Reported, not changed. |
 | `duplicate-ids` | Two elements share the same id. Style references and feature lookups may pick the wrong one. | Reported, not changed. |
 
 ## Info

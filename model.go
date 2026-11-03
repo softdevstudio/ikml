@@ -23,6 +23,8 @@ const (
 	FormatKML     Format = "kml"
 	FormatKMZ     Format = "kmz"
 	FormatGeoJSON Format = "geojson"
+	FormatGPX     Format = "gpx"
+	FormatCSV     Format = "csv"
 )
 
 // Doc is the unified model of an opened file. Fields are exported so
@@ -81,6 +83,8 @@ type Doc struct {
 	assetData  map[string]*zipEntry
 	edits      []edit
 	dropCRS    bool
+	gpx        *gpxInfo
+	csv        *csvInfo
 }
 
 // Folder is a Document, Folder, or the implicit root of a GeoJSON file.
@@ -127,6 +131,8 @@ type Placemark struct {
 	styleRange [2]int
 	styleLine  int
 	views      int
+	gpx        *gpxFeature
+	csv        *csvRow
 }
 
 // Field is one attribute value (KML ExtendedData or a GeoJSON property).
@@ -171,6 +177,7 @@ type Geometry struct {
 	badTuples  int
 	spacing    bool
 	hasOuter   bool
+	ptRaw      [][]byte // GPX: each point's children, verbatim
 }
 
 // Coord is one position. Has3 is true when an altitude was given.

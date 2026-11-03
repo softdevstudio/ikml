@@ -73,7 +73,11 @@ func analyze(d *Doc) {
 	checkRefs(d)
 
 	if tracks > 0 {
-		c.add("has-tracks", Loc{}, tracks, "The file has %s with a time for each point.", count(tracks, "gx:Track GPS track", "gx:Track GPS tracks"))
+		if d.Format == FormatGPX {
+			c.add("has-tracks", Loc{}, tracks, "The file has %s with a time for each point.", count(tracks, "GPS track segment", "GPS track segments"))
+		} else {
+			c.add("has-tracks", Loc{}, tracks, "The file has %s with a time for each point.", count(tracks, "gx:Track GPS track", "gx:Track GPS tracks"))
+		}
 	}
 	if stamped > 0 {
 		c.add("has-timestamps", Loc{}, stamped, "%s a TimeStamp or TimeSpan.", count(stamped, "placemark carries", "placemarks carry"))
@@ -191,7 +195,7 @@ func checkGeometry(d *Doc, pm *Placemark, loc Loc) {
 			gl.Line = l.Line
 		}
 		mode := l.AltitudeMode
-		if d.Format != FormatGeoJSON && (mode == "" || mode == "clampToGround" || mode == "clampToSeaFloor") {
+		if d.Format != FormatGeoJSON && d.Format != FormatGPX && d.Format != FormatCSV && (mode == "" || mode == "clampToGround" || mode == "clampToSeaFloor") {
 			clamp = true
 		}
 		lists := l.coordLists()

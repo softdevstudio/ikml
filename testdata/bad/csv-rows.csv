@@ -1,0 +1,5 @@
+name,latitude,longitude,note
+Ok,41.9028,12.4964,fine
+Missing,,12.5,no latitude
+Text,forty,12.5,not a number
+Short,41.9,12.49

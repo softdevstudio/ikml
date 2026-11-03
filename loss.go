@@ -32,6 +32,14 @@ func LossReport(d *Doc, target string) []Loss {
 		src = FormatKML
 	}
 	switch {
+	case src == FormatCSV:
+		return lossFromCSV(d, t)
+	case src != FormatCSV && t == "csv" && src != FormatGPX:
+		return lossToCSV(d)
+	case src == FormatGPX && t != "gpx":
+		return lossFromGPX(d, t)
+	case src != FormatGPX && t == "gpx":
+		return lossToGPX(d)
 	case src == FormatKML && t == "geojson":
 		return lossKMLToGeoJSON(d)
 	case src == FormatGeoJSON && (t == "kml" || t == "kmz"):

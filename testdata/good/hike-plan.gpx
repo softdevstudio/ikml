@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Trailhead 4.2" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Ein Gedi loop</name>
+    <author><name>Dana</name></author>
+  </metadata>
+  <wpt lat="31.4621" lon="35.3887">
+    <ele>-310</ele>
+    <time>2026-04-20T05:40:00Z</time>
+    <name>Parking</name>
+    <cmt>Gate opens at 8</cmt>
+    <desc>Car park by the field school</desc>
+    <link href="https://example.org/ein-gedi"><text>Trail page</text></link>
+    <sym>Parking Area</sym>
+    <fix>3d</fix>
+    <sat>9</sat>
+  </wpt>
+  <wpt lat="31.4675" lon="35.3851">
+    <ele>-170</ele>
+    <name>David's Falls</name>
+    <sym>Waypoint</sym>
+  </wpt>
+  <rte>
+    <name>Planned loop</name>
+    <number>1</number>
+    <rtept lat="31.4621" lon="35.3887"><name>Start</name></rtept>
+    <rtept lat="31.4650" lon="35.3870"><name>Spring</name><sym>Water Source</sym></rtept>
+    <rtept lat="31.4675" lon="35.3851"><ele>-170</ele><name>Falls</name></rtept>
+  </rte>
+  <trk>
+    <name>Recorded hike</name>
+    <type>hiking</type>
+    <extensions><color>red</color></extensions>
+    <trkseg>
+      <trkpt lat="31.4621" lon="35.3887"><ele>-310</ele><time>2026-04-20T05:41:00Z</time><sat>9</sat></trkpt>
+      <trkpt lat="31.4634" lon="35.3880"><ele>-290</ele><time>2026-04-20T05:46:00Z</time><sat>8</sat></trkpt>
+      <trkpt lat="31.4650" lon="35.3870"><ele>-250</ele><time>2026-04-20T05:52:00Z</time></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="31.4660" lon="35.3862"><ele>-220</ele><time>2026-04-20T06:20:00Z</time></trkpt>
+      <trkpt lat="31.4675" lon="35.3851"><ele>-170</ele><time>2026-04-20T06:31:00Z</time></trkpt>
+      <extensions><distance>812</distance></extensions>
+    </trkseg>
+  </trk>
+</gpx>

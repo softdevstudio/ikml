@@ -224,8 +224,12 @@ func targetOf(out string) (string, error) {
 		return "kml", nil
 	case ".kmz":
 		return "kmz", nil
+	case ".gpx":
+		return "gpx", nil
+	case ".csv":
+		return "csv", nil
 	}
-	return "", fmt.Errorf("cannot tell the output format from %q; use .geojson, .json, .kml or .kmz", out)
+	return "", fmt.Errorf("cannot tell the output format from %q; use .geojson, .json, .kml, .kmz, .gpx or .csv", out)
 }
 
 func convert(cmd string, o opts, stdout, stderr io.Writer) int {
@@ -278,6 +282,10 @@ func convert(cmd string, o opts, stdout, stderr io.Writer) int {
 		err = ikml.WriteKML(d, &buf)
 	case "kmz":
 		err = ikml.WriteKMZ(d, &buf, &ikml.KMZOptions{Extra: bundle(d, in)})
+	case "gpx":
+		err = ikml.WriteGPX(d, &buf)
+	case "csv":
+		err = ikml.WriteCSV(d, &buf)
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "ikml: %v\n", err)

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.2" creator="joined" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Two recordings joined</name>
+    <trkseg>
+      <trkpt lat="45.4642" lon="9.1900"><time>2026-03-01T09:00:00Z</time></trkpt>
+      <trkpt lat="45.4650" lon="9.1910"><time>2026-03-01T09:05:00Z</time></trkpt>
+      <trkpt lat="45.4660" lon="9.1920"><time>2026-03-01T08:10:00Z</time></trkpt>
+      <trkpt lat="45.4670" lon="9.1930"><time>01/03/2026 08:15</time></trkpt>
+      <trkpt lat="north" lon="9.1940"><time>2026-03-01T08:20:00Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

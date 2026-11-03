@@ -23,7 +23,7 @@ const (
 )
 
 // ErrUnknownFormat is returned when the data is not KML, KMZ or GeoJSON.
-var ErrUnknownFormat = errors.New("not a KML, KMZ or GeoJSON file")
+var ErrUnknownFormat = errors.New("not a KML, KMZ, GeoJSON, GPX or CSV file")
 
 // ErrEmpty is returned for empty input.
 var ErrEmpty = errors.New("the file is empty")
@@ -46,6 +46,11 @@ func Open(name string, data []byte) (*Doc, error) {
 		d.zipData = data
 		openKMZ(d, data)
 	case bytes.HasPrefix(data, []byte{0xFF, 0xFE}) || bytes.HasPrefix(data, []byte{0xFE, 0xFF}):
+		if isGPX(data) {
+			d.Format = FormatGPX
+			openGPX(d, data)
+			break
+		}
 		d.Format = FormatKML
 		openKML(d, data)
 	default:
@@ -56,12 +61,22 @@ func Open(name string, data []byte) (*Doc, error) {
 		}
 		switch b[0] {
 		case '<':
+			if isGPX(data) {
+				d.Format = FormatGPX
+				openGPX(d, data)
+				break
+			}
 			d.Format = FormatKML
 			openKML(d, data)
 		case '{', '[':
 			d.Format = FormatGeoJSON
 			parseGeoJSON(d, bytes.TrimPrefix(data, []byte("\xEF\xBB\xBF")))
 		default:
+			if looksLikeCSV(name, b) {
+				d.Format = FormatCSV
+				openCSV(d, data)
+				break
+			}
 			return nil, ErrUnknownFormat
 		}
 	}

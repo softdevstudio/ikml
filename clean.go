@@ -41,6 +41,9 @@ func Clean(d *Doc, opt CleanOptions) (*Doc, []Change, error) {
 	}
 	c := d.clone()
 	cl := &cleaner{d: c, opt: opt}
+	if c.Format == FormatGPX || c.Format == FormatCSV {
+		return cleanPoints(d, c, cl)
+	}
 	swapped := map[*Placemark]bool{}
 	if opt.FixSwapped {
 		for _, pm := range c.Placemarks() {
@@ -374,4 +377,35 @@ func hasBadTuples(g *Geometry) bool {
 		}
 	}
 	return false
+}
+
+// cleanPoints applies the one safe fix GPX and CSV allow: swapped
+// coordinates, on request. Points keep their details, so nothing is ever
+// dropped from a GPX track (duplicate points in a GPS track are left
+// alone, as elsewhere) or a CSV file.
+func cleanPoints(d, c *Doc, cl *cleaner) (*Doc, []Change, error) {
+	if cl.opt.FixSwapped {
+		for _, pm := range c.Placemarks() {
+			if pm.Geometry == nil || !isSwapped(pm.Geometry) {
+				continue
+			}
+			for _, l := range pm.Geometry.leaves() {
+				l.Coords = swapAll(l.Coords)
+			}
+			cl.add("swapped-latlon", Loc{Path: pm.Path, Line: pm.Line}, 1, "Swapped longitude and latitude back into the right order.")
+		}
+	}
+	var buf bytes.Buffer
+	write := WriteGPX
+	if c.Format == FormatCSV {
+		write = WriteCSV
+	}
+	if err := write(c, &buf); err != nil {
+		return nil, nil, err
+	}
+	out, err := Open(d.Filename, buf.Bytes())
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, cl.changes, nil
 }
