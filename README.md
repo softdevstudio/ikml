@@ -1,7 +1,7 @@
 # iKML
 
-**Understand a geographic file before you import it.** iKML opens KML, KMZ
-and GeoJSON files, shows what's inside, flags what's broken, tells you
+**Understand a geographic file before you import it.** iKML opens KML, KMZ,
+GeoJSON, GPX and CSV files, shows what's inside, flags what's broken, tells you
 exactly what a conversion to another format will lose, and writes a cleaned
 copy with a list of every change.
 
@@ -30,8 +30,10 @@ survey.kmz (kmz, 9.5 KiB)
 KML is how Google Earth, Google My Maps, drone mission planners, surveying
 apps and GIS exports hand over places, routes and areas. KMZ is the same
 thing zipped with its icons and images. GeoJSON is what most web maps and
-data tools want. People pass these files around constantly, and the import
-is where things go quietly wrong:
+data tools want. GPX is what a watch, a bike computer or Strava hands you
+after a ride, and CSV is the spreadsheet of addresses someone exported.
+People pass these files around constantly, and the import is where things
+go quietly wrong:
 
 - points land in the ocean because latitude and longitude were written in
   the wrong order
@@ -40,6 +42,8 @@ is where things go quietly wrong:
   creator's own computer (`file:///C:/Users/...`)
 - styles, folders, attribute data and timestamps disappear in a conversion,
   and nothing tells you which
+- a GPX from a watch loses its heart rate, cadence and power the moment it
+  becomes KML or GeoJSON
 
 iKML reads the file the way an importer would, and tells you all of that
 first.
@@ -56,15 +60,16 @@ first.
 | Browser version | [ikml-web.zip](https://github.com/softdevstudio/ikml/releases/latest/download/ikml-web.zip) |
 
 Checksums are in [SHA256SUMS](https://github.com/softdevstudio/ikml/releases/latest/download/SHA256SUMS).
-With Go 1.24 or later: `go install github.com/softdevstudio/ikml/cmd/ikml@latest`.
+With Go 1.26 or later: `go install github.com/softdevstudio/ikml/cmd/ikml@latest`.
 
 ## Commands
 
 ```
 ikml inspect FILE [--json]            show what is inside the file
 ikml check FILE [--json] [--strict]   list problems; exit 1 if errors found
+ikml check DIR [--json] [--strict]    check every map file in a folder
 ikml convert IN OUT [--report] [--json]
-                                      convert by OUT extension (.geojson, .json, .kml, .kmz)
+                                      convert by OUT extension (.geojson, .json, .kml, .kmz, .gpx, .csv)
 ikml clean IN OUT [--fix-swapped] [--drop-unused] [--report] [--json]
                                       apply safe fixes and write a cleaned copy
 ikml codes [--json]                   list every issue code
@@ -136,6 +141,34 @@ office.kmz (kmz, 468 bytes)
 [REFERENCE.md](REFERENCE.md) lists every code, what it means and whether
 `clean` fixes it.
 
+Give it a folder and it checks every `.kml`, `.kmz`, `.geojson`, `.json`,
+`.gpx` and `.csv` inside, one line per file and the totals, or one JSON
+object with `files`, `skipped` and `totals`. It doesn't follow symbolic
+links, skips folders whose names start with a dot, and stops past 10,000
+files. A `.json` file that isn't GeoJSON (a `package.json`, say) and a
+`.csv` without latitude and longitude columns are listed as skipped, not
+failed, so a whole repository can be checked.
+
+### In GitHub Actions
+
+`action.yml` makes iKML a pull request check. It downloads the release
+binary for the runner, checks it against SHA256SUMS, checks the folder,
+writes an annotation on each error and warning with its file and line, adds
+a table to the job summary and fails on errors:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: softdevstudio/ikml@v0.2.0
+  with:
+    path: maps            # a folder or one file; default the whole repository
+    strict: "false"       # true: warnings fail too
+    fail: "true"          # false: report only
+```
+
+Outputs: `result` (ok, issues or error), `exit-code`, `files`, `errors`,
+`warnings`, `report` (the JSON report's path) and `version` (the release
+tag used).
+
 ### convert
 
 Writes GeoJSON, KML or KMZ, chosen by the output file's extension, and with
@@ -191,13 +224,74 @@ the folder path in a `folder` property, ExtendedData as properties, times as
 `timestamp`, `begin`, `end` and per-point `coordTimes`. Converting back to
 KML rebuilds the folders.
 
+### GPX
+
+Waypoints become points, routes become lines, and each track becomes one
+placemark: a GPS track with a time per point for each segment, or a plain
+line when a segment has no times. Names, descriptions, times and elevations
+go to the model; comments, sources, symbols, types and links become
+properties or ExtendedData. GPX written from GPX keeps everything else as it
+was: the namespaces, `<metadata>`, every `<extensions>` element and each
+point's own details, so a Garmin or Strava file comes back with its heart
+rate, cadence, temperature and power. Converting it to KML or GeoJSON tells
+you what goes:
+
+```
+$ ikml convert ride.gpx ride.geojson --report
+Converted ride.gpx (gpx) to ride.geojson (geojson, 2.9 KiB).
+
+What changes from gpx to geojson:
+
+  [LOST] Track point extensions (60)
+    60 points carry extensions, such as heart rate, cadence, temperature or
+    power from a watch or an app. They have no place in GeoJSON and are
+    dropped. The number after each name is how many points have it.
+      - cad (60)
+      - hr (60)
+      - power (60)
+
+  [LOST] Metadata (1)
+    The file's <metadata> (author, copyright, links, time, bounds) is
+    dropped.
+      - time
+
+  [KEPT] Comments, sources, symbols, types and links (1)
+    These GPX elements are written as properties with the same names.
+
+Before: 0 error(s), 0 warning(s). After: 0 error(s), 0 warning(s).
+```
+GPX written from KML or GeoJSON has a waypoint for each point and a track
+for each line, with times from a `gx:Track` or `coordTimes`. Polygons,
+attributes, styles and folders are reported lost, and waypoints move ahead
+of tracks, since GPX lists them first. Times that aren't RFC 3339
+(`gpx-time-invalid`), points earlier than the one before
+(`gpx-time-backwards`) and a missing or unknown version (`gpx-version`) are
+warnings.
+
+### CSV
+
+A CSV is read when its first row names a latitude and a longitude column
+(`lat`, `latitude` or `y`, and `lon`, `lng`, `long`, `longitude` or `x`,
+any case). Commas, semicolons and tabs are recognized, and with semicolons
+or tabs a decimal comma (`48,2167`) is read too. `name` or `title`,
+`description`, `time` and `ele` or `altitude` columns fill those parts;
+every other column becomes a property. Rows without readable coordinates
+are left out (`csv-bad-row`), rows with the wrong number of values are
+padded or cut (`csv-ragged-row`), and a file with no coordinate columns is
+`csv-no-coordinates`. CSV written from CSV keeps its header, column order
+and delimiter; from anything else it has one row per point, with `name`,
+`lat`, `lon`, then `ele`, `time` and `description` when used, then the
+attributes. Lines and polygons are reported lost.
+
 ### clean
 
 Applies safe fixes only and lists each one: closes open rings, removes
 repeated points, fixes spaces in coordinate lists, drops broken style
 references, upgrades old KML namespaces and adds a missing one, and removes
-a WGS 84 `crs` member from GeoJSON. `--fix-swapped` also swaps latitude and
-longitude where they're certainly reversed; it's opt-in because a wrong
+a WGS 84 `crs` member from GeoJSON. In GPX and CSV files only
+`--fix-swapped` changes anything, since a GPS track's repeated points are
+real readings. `--fix-swapped` swaps latitude and longitude where they're
+certainly reversed; it's opt-in because a wrong
 guess moves data far. `--drop-unused` removes files a KMZ holds but never
 uses. The original file is never changed.
 
@@ -236,11 +330,11 @@ The release also includes `ikml-web.zip`, ready to drop on any static host.
 ## As a Go library
 
 ```go
-doc, err := ikml.Open("survey.kmz", data)  // KML, KMZ or GeoJSON, detected by content
+doc, err := ikml.Open("survey.kmz", data)  // KML, KMZ, GeoJSON, GPX or CSV, detected by content
 report := ikml.Inspect(doc)                // structure, stats, issues
 losses := ikml.LossReport(doc, "geojson")  // what a conversion drops or changes
 clean, changes, err := ikml.Clean(doc, ikml.CleanOptions{})
-err = ikml.WriteGeoJSON(clean, w)          // or WriteKML, WriteKMZ
+err = ikml.WriteGeoJSON(clean, w)          // or WriteKML, WriteKMZ, WriteGPX, WriteCSV
 ```
 
 Standard library only. Files are read in memory with hard limits: a KMZ may
@@ -253,12 +347,16 @@ writes such a name.
 
 The test files in [testdata](testdata) are written by hand, laid out the
 way real exporters write them: Google Earth Pro, Google My Maps, a DJI drone
-mission KMZ, ArcGIS and QGIS exports, a GPS track, a photo tour KMZ. Every
+mission KMZ, ArcGIS and QGIS exports, a GPS track, a photo tour KMZ, a
+Garmin Connect and a Strava GPX export, a hiking app's GPX with waypoints
+and a route, and comma and semicolon CSVs. Every
 good file must give no errors. Every broken file must give the exact issue
 codes it was made to trigger. Every valid file goes KML to GeoJSON and back
 with each coordinate unchanged, and so do thousands of randomly generated
-documents. Cleaning twice gives the same file as cleaning once. Fuzzers feed
-damaged KML, KMZ, GeoJSON and coordinate text to the parsers, and a zip bomb
+documents. The GPX exports go GPX to GPX with every verbatim part the same
+bytes, and to GeoJSON and KML and back with positions, elevations, times and
+names unchanged and a loss report that lists exactly what went. Cleaning twice gives the same file as cleaning once. Fuzzers feed
+damaged KML, KMZ, GeoJSON, GPX, CSV and coordinate text to the parsers, and a zip bomb
 must be refused. The browser build runs the same checks in Node.
 
 The recorded results are in [test/results](test/results). To record them
