@@ -1,0 +1,69 @@
+iKML 0.2.0 release check, 2026-11-03
+Release commit: 2cdba46; CI run 41737702317, Release run 41738716829, action-test download run 41738880630 (Linux, macOS, Windows, pinned and latest: success).
+
+Assets at the tag (REST asset download) checked against SHA256SUMS:
+ikml-web.zip: OK
+ikml_darwin_amd64.tar.gz: OK
+ikml_darwin_arm64.tar.gz: OK
+ikml_linux_amd64.tar.gz: OK
+ikml_linux_arm64.tar.gz: OK
+ikml_windows_amd64.zip: OK
+
+Assets at releases/latest/download checked against SHA256SUMS and compared with the tag copies:
+ikml-web.zip: OK
+ikml_darwin_amd64.tar.gz: OK
+ikml_darwin_arm64.tar.gz: OK
+ikml_linux_amd64.tar.gz: OK
+ikml_linux_arm64.tar.gz: OK
+ikml_windows_amd64.zip: OK
+SHA256SUMS: same as tag
+ikml-web.zip: same as tag
+ikml_darwin_amd64.tar.gz: same as tag
+ikml_darwin_arm64.tar.gz: same as tag
+ikml_linux_amd64.tar.gz: same as tag
+ikml_linux_arm64.tar.gz: same as tag
+ikml_windows_amd64.zip: same as tag
+
+SHA256SUMS:
+14c9dd3e03d610edcd3945482c8817b3542c2031a03200578bde36b6ec226f0a  ikml-web.zip
+b50a024e802dc3f44f744103a96edb0e4102d01cda16acfbae20e0e9322932f9  ikml_darwin_amd64.tar.gz
+46d0220117542199cfc7f7471d24435c27652da2afa404b6070421ebef21f690  ikml_darwin_arm64.tar.gz
+a1dc11779a1a1cc10f58cc508a62c0f2033f82fcf43861835bd5d413de9f150e  ikml_linux_amd64.tar.gz
+49fc3a43c345e21e51acbbcc6fa106a21a5b8d608a823a29737d77094651df0b  ikml_linux_arm64.tar.gz
+15d91fb71202075086abe574a7c9d9cd2c5fca6bc2f3f94ef2b3cee026492f50  ikml_windows_amd64.zip
+
+Downloaded Linux amd64 binary:
+$ ikml version
+ikml 0.2.0
+
+== garmin-connect
+Nothing is lost converting gpx to gpx.
+GPX to GPX: identical bytes
+  [LOST] Track point extensions (40)
+      - atemp (40)
+      - cad (40)
+      - hr (40)
+  [LOST] Metadata (1)
+      - link
+      - time
+  [KEPT] Comments, sources, symbols, types and links (1)
+via GeoJSON and KML back to GPX: ok
+  back.gpx: 40 points, positions/elevations/times equal: True
+  back2.gpx: 40 points, positions/elevations/times equal: True
+
+== strava
+Nothing is lost converting gpx to gpx.
+GPX to GPX: identical bytes
+  [LOST] Track point extensions (60)
+      - cad (60)
+      - hr (60)
+      - power (60)
+  [LOST] Metadata (1)
+      - time
+  [KEPT] Comments, sources, symbols, types and links (1)
+via GeoJSON and KML back to GPX: ok
+  back.gpx: 60 points, positions/elevations/times equal: True
+  back2.gpx: 60 points, positions/elevations/times equal: True
+
+check testdata/good exit 0
+check testdata/bad exit 1

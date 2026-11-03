@@ -69,6 +69,9 @@ reference, the stdout claim).
 0.1.2 (2026-10-25): duplicate main documents and unsafe names never
 chosen as the main document (second review).
 
+0.2.0 (2026-11-04): GPX and CSV in and out, `check DIR`, the GitHub
+Action, the browser tool on GPX and CSV.
+
 ## Gaps and to-do
 
 Known gaps, not planned yet:
@@ -107,11 +110,11 @@ Steps:
 2. [x] Upkeep: go.mod 1.26 (0850f63).
 3. [x] Phase A (8297f01): gpx.go, gpx_test.go (GPX to GPX with every verbatim part the same bytes and stable on a second pass; Garmin, Strava and hike through GeoJSON and KML and back with exact loss reports; KML to GPX; problems; clean --fix-swapped). KML to GPX moves waypoints ahead of tracks and reports it (Order, changed).
 4. [x] Phase B (d60f59d, 4e2f446): csv.go and csv_test.go (semicolon files keep their delimiter and decimal commas); `check DIR` skips .json that isn't GeoJSON and .csv without coordinates, listed as skipped; GPX and CSV fuzz targets; action.yml and action-test.yml (local on 3 OS with a binary from the commit, install of v0.1.2 on 3 OS, download after each release).
-5. [ ] Site tool check (scripts/check-site-tool.sh); browser tool accepts .gpx and .csv (done); README (done), REFERENCE.md (done), CHANGELOG at the version bump.
+5. [x] Site tool check (scripts/check-site-tool.sh); browser tool accepts .gpx and .csv (done); README (done), REFERENCE.md (done), CHANGELOG at the version bump.
 6. [x] Independent review, two rounds, fixes, fresh test/results.
    Review round 1: blocker, GPX to GPX dropped attributes and namespace declarations on wpt/rte/trk/trkseg/trkpt while reporting nothing lost; fixed by writing GPX and CSV to their own format as the source bytes, with only the coordinates clean fixed spliced in (TestGPXKeepsEverything, TestCSVKeepsEverything). Should-fix, all fixed with tests: a prefixed root lost its namespace; GPX 1.0 root metadata was unknown-element and dropped, url, urlname and link text unreported; CSV to CSV dropped bad and ragged rows, BOM and CRLF while reporting nothing; check DIR skipped GeoJSON with a BOM and broken JSON, stopped at an unreadable folder, and checked nothing through a symlinked folder argument. Nits fixed: Action error text escaped, CSV delimiter picked by the coordinate columns, decimal comma per row, partly timed segments time-checked, isGPX looks further, GPX to CSV field count.
    Review round 2: no blockers. Should-fix, fixed with tests: clean could write a fix into data-lat=, d:lat= or a lat="..." inside another value (attributes now scanned one by one, prefixed lat/lon ignored when reading); CSV and GPX conversions didn't report rows or points left out, or ragged rows' extra values. Nits fixed: clean replaces only the CSV cells it fixes (CRLF in quoted cells kept), CR-only CSV gets a line-ending hint, /row[N] counts records, swapped-latlon wording for GPX and CSV, symlinked map files listed as skipped, "Other column values" names the column count.
-7. [ ] 0.2.0 released by the workflow; assets checked at the tag and latest; downloaded binary run.
+7. [x] 0.2.0 released by the workflow (commit 2cdba46, Release run 41738716829). All six assets match SHA256SUMS at the tag and at latest. The downloaded Linux binary prints 0.2.0; the Garmin Connect and Strava GPX fixtures round-trip GPX to GPX byte for byte, and through GeoJSON and KML back to GPX with every position, elevation and time equal, the loss report naming hr, cad, atemp and power with their counts. action-test download job green on 3 OS, pinned and latest (41738880630). Evidence in test/results/ikml-0.2.0-release.
 8. [ ] ikml.com post, pages and static/tool; softdevstudio.com note; softdev-plan item 23 done.
 
 ## Next
