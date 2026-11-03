@@ -127,6 +127,10 @@ func transform(args []js.Value, clean bool) any {
 		err = ikml.WriteKML(doc, &buf)
 	case "kmz":
 		err = ikml.WriteKMZ(doc, &buf, nil)
+	case "gpx":
+		err = ikml.WriteGPX(doc, &buf)
+	case "csv":
+		err = ikml.WriteCSV(doc, &buf)
 	default:
 		return errObj("unknown target " + target)
 	}

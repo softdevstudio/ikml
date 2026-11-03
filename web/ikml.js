@@ -207,7 +207,9 @@
     out.appendChild(el("div", "ikml-h", "Download"));
     var acts = el("div", "ikml-actions");
     var swap = el("input"); swap.type = "checkbox";
-    var targets = r.format === "geojson" ? ["kml", "kmz", "geojson"] : ["geojson", "kml", "kmz"];
+    var targets = r.format === "geojson" ? ["kml", "kmz", "geojson", "gpx", "csv"] : ["geojson", "kml", "kmz", "gpx", "csv"];
+    // The file's own format first for GPX and CSV, then the others.
+    if (r.format === "gpx" || r.format === "csv") targets = [r.format].concat(targets.filter(function (t) { return t !== r.format; }));
     targets.forEach(function (t) {
       var b = el("button", "", "Cleaned " + t.toUpperCase());
       b.onclick = function () {
@@ -233,9 +235,9 @@
     var drop = el("div", "ikml-drop");
     drop.setAttribute("role", "button");
     drop.setAttribute("tabindex", "0");
-    drop.appendChild(el("strong", "", "Drop a KML, KMZ or GeoJSON file here, or click to choose one"));
+    drop.appendChild(el("strong", "", "Drop a KML, KMZ, GeoJSON, GPX or CSV file here, or click to choose one"));
     drop.appendChild(el("small", "", "The file is read inside your browser. It is never uploaded."));
-    var input = el("input"); input.type = "file"; input.accept = ".kml,.kmz,.geojson,.json"; input.hidden = true;
+    var input = el("input"); input.type = "file"; input.accept = ".kml,.kmz,.geojson,.json,.gpx,.csv"; input.hidden = true;
     var out = el("div", "ikml-out");
     root.appendChild(drop); root.appendChild(input); root.appendChild(out);
 

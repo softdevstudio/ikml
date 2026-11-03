@@ -39,6 +39,17 @@ const k = globalThis.ikmlClean(file("bad/unclosed-ring.kml"), "unclosed-ring.kml
 const rep = JSON.parse(k.report);
 check("clean closes the ring", rep.changes.some((x) => x.code === "ring-unclosed"), k.name);
 
+r = JSON.parse(globalThis.ikmlInspect(file("good/strava.gpx"), "strava.gpx"));
+check("gpx opens", r.report.format === "gpx" && r.report.errors === 0, r.report.format);
+check("gpx loss report names the extensions", r.losses.some((l) => l.what === "Track point extensions" && l.items.includes("power (60)")));
+const g = globalThis.ikmlConvert(file("good/strava.gpx"), "strava.gpx", "gpx");
+check("gpx to gpx keeps the power values", new TextDecoder().decode(g.bytes).includes("<power>"), g.name);
+
+r = JSON.parse(globalThis.ikmlInspect(file("good/stations.csv"), "stations.csv"));
+check("csv opens", r.report.format === "csv" && r.preview.length === 3, r.report.format);
+const v = globalThis.ikmlConvert(file("good/hike-plan.gpx"), "hike-plan.gpx", "csv");
+check("gpx to csv", new TextDecoder().decode(v.bytes).startsWith("name,lat,lon"), v.name);
+
 r = JSON.parse(globalThis.ikmlInspect(new Uint8Array([1, 2, 3]), "junk.bin"));
 check("garbage gives an error, not a crash", typeof r.error === "string" || r.report?.errors > 0);
 
