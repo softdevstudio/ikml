@@ -145,3 +145,55 @@ func TestCSVCleanSwapped(t *testing.T) {
 		t.Errorf("cleaned CSV:\n%s", buf.String())
 	}
 }
+
+// CSV written from a CSV source is the source file, byte for byte: a BOM,
+// CRLF line endings, rows that can't be placed and ragged rows all stay.
+// Clean rewrites only the rows it fixes.
+func TestCSVKeepsEverything(t *testing.T) {
+	src := "\xEF\xBB\xBFname;lat;lon;note\r\n" +
+		"A;45,5;9,2;x\r\n" +
+		"B;n/a;9,3;bad\r\n" +
+		"C;45,6;9,4;x;extra\r\n" +
+		"D;134,78;32,08;swapped\r\n"
+	d, err := Open("x.csv", []byte(src))
+	if err != nil || !d.Readable() {
+		t.Fatalf("open: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := WriteCSV(d, &buf); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != src {
+		t.Errorf("CSV output changed the file:\n%q", buf.String())
+	}
+	if ls := LossReport(d, "csv"); len(ls) != 0 {
+		t.Errorf("CSV to CSV reports losses: %+v", ls)
+	}
+	c, changes, err := Clean(d, CleanOptions{FixSwapped: true})
+	if err != nil || len(changes) == 0 {
+		t.Fatalf("clean: %v %v", err, changes)
+	}
+	buf.Reset()
+	WriteCSV(c, &buf)
+	want := strings.Replace(src, "D;134,78;32,08;swapped", "D;32,08;134,78;swapped", 1)
+	if buf.String() != want {
+		t.Errorf("clean output:\n%q\nwant\n%q", buf.String(), want)
+	}
+}
+
+// A header that splits into more columns on another delimiter still uses
+// the one that finds the coordinates.
+func TestCSVDelimiterFindsCoordinates(t *testing.T) {
+	d, err := Open("x.csv", []byte("name,lat,lon\n\"a;b;c;d\",1.5,2.5\n"))
+	if err != nil || !d.Readable() || len(d.Placemarks()) != 1 {
+		t.Fatalf("open: %v", err)
+	}
+	// A tab file with points as decimals.
+	d, err = Open("x.tsv", []byte("lat\tlon\tname\n1.25\t2.5\tp\n"))
+	if err != nil || !d.Readable() {
+		t.Fatalf("tsv: %v", err)
+	}
+	if c := d.Placemarks()[0].Geometry.Coords[0]; c.Lat != 1.25 || c.Lon != 2.5 {
+		t.Errorf("tsv coords %+v", c)
+	}
+}

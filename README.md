@@ -146,8 +146,11 @@ Give it a folder and it checks every `.kml`, `.kmz`, `.geojson`, `.json`,
 object with `files`, `skipped` and `totals`. It doesn't follow symbolic
 links, skips folders whose names start with a dot, and stops past 10,000
 files. A `.json` file that isn't GeoJSON (a `package.json`, say) and a
-`.csv` without latitude and longitude columns are listed as skipped, not
-failed, so a whole repository can be checked.
+`.csv` whose header has no latitude and longitude column under one of the
+names below are listed as skipped, not failed, so a whole repository can be
+checked. Broken JSON is checked and reported, not skipped. A folder that
+can't be read counts as unreadable, and the check goes on. A folder with no
+map files at all says so.
 
 ### In GitHub Actions
 
@@ -230,10 +233,10 @@ Waypoints become points, routes become lines, and each track becomes one
 placemark: a GPS track with a time per point for each segment, or a plain
 line when a segment has no times. Names, descriptions, times and elevations
 go to the model; comments, sources, symbols, types and links become
-properties or ExtendedData. GPX written from GPX keeps everything else as it
-was: the namespaces, `<metadata>`, every `<extensions>` element and each
-point's own details, so a Garmin or Strava file comes back with its heart
-rate, cadence, temperature and power. Converting it to KML or GeoJSON tells
+properties or ExtendedData. GPX written from GPX is the original file byte
+for byte (only the coordinates `clean --fix-swapped` corrects are changed,
+in place), so a Garmin or Strava file comes back with its namespaces,
+`<metadata>`, comments, heart rate, cadence, temperature and power. Converting it to KML or GeoJSON tells
 you what goes:
 
 ```
@@ -278,8 +281,9 @@ or tabs a decimal comma (`48,2167`) is read too. `name` or `title`,
 every other column becomes a property. Rows without readable coordinates
 are left out (`csv-bad-row`), rows with the wrong number of values are
 padded or cut (`csv-ragged-row`), and a file with no coordinate columns is
-`csv-no-coordinates`. CSV written from CSV keeps its header, column order
-and delimiter; from anything else it has one row per point, with `name`,
+`csv-no-coordinates`. CSV written from CSV is the original file byte for
+byte, rows left out of the map included; `clean --fix-swapped` rewrites
+only the rows it fixes. From anything else it has one row per point, with `name`,
 `lat`, `lon`, then `ele`, `time` and `description` when used, then the
 attributes. Lines and polygons are reported lost.
 

@@ -6,8 +6,8 @@ standard library only.
 
 - `open.go` detects the format by content; `kml.go`, `geojson.go`, `gpx.go`
   and `csv.go` parse into the shared model in `model.go`. GPX and CSV keep
-  their own verbatim parts (`gpxInfo`, `csvInfo`) so GPX to GPX and CSV to
-  CSV lose nothing; `gpx.go` and `csv.go` also hold their writers and loss
+  the source bytes (`gpxInfo.raw`, `csvInfo.raw`): GPX to GPX and CSV to CSV
+  write them back unchanged, splicing in only the coordinates clean fixed; `gpx.go` and `csv.go` also hold their writers and loss
   reports.
 - `analyze.go` runs the checks; `issues.go` holds the issue code table,
   which is also the source of REFERENCE.md (`go run ./internal/refgen > REFERENCE.md`).

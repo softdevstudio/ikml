@@ -142,7 +142,10 @@ runs:
         report="$RUNNER_TEMP/ikml-report-$GITHUB_ACTION.json"
         echo "report=$report" >> "$GITHUB_OUTPUT"
         error() {
-          echo "::error::ikml: $1"
+          # Workflow command data: %, CR and LF escaped so a message can't
+          # start another command.
+          msg=${1//'%'/'%25'}; msg=${msg//$'\r'/'%0D'}; msg=${msg//$'\n'/'%0A'}
+          echo "::error::ikml: $msg"
           echo "result=error" >> "$GITHUB_OUTPUT"; echo "exit-code=${2:-2}" >> "$GITHUB_OUTPUT"
           exit 0
         }
@@ -169,6 +172,7 @@ runs:
         echo "files=$files" >> "$GITHUB_OUTPUT"
         echo "errors=$errors" >> "$GITHUB_OUTPUT"
         echo "warnings=$warnings" >> "$GITHUB_OUTPUT"
+        [ "$files" -gt 0 ] || echo "::warning::ikml found no map files (.kml .kmz .geojson .json .gpx .csv) in $IN_PATH"
         if [ "$IN_ANNOTATE" = true ]; then
           # Workflow command escaping: data takes %, CR and LF; properties
           # also take : and ,.

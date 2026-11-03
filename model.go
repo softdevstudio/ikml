@@ -131,7 +131,6 @@ type Placemark struct {
 	styleRange [2]int
 	styleLine  int
 	views      int
-	gpx        *gpxFeature
 	csv        *csvRow
 }
 
@@ -177,7 +176,8 @@ type Geometry struct {
 	badTuples  int
 	spacing    bool
 	hasOuter   bool
-	ptRaw      [][]byte // GPX: each point's children, verbatim
+	ptSpan     [][2][2]int // GPX: byte ranges of each point's lat and lon values
+	ptOrig     []Coord     // GPX: each point as read, to see what clean changed
 }
 
 // Coord is one position. Has3 is true when an altitude was given.

@@ -3,11 +3,21 @@ package ikml
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 )
+
+func readFile(t *testing.T, path string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
 
 func writeTo(t *testing.T, d *Doc, target string) *Doc {
 	t.Helper()
@@ -61,55 +71,88 @@ func shapes(d *Doc) []shape {
 	return out
 }
 
-// GPX written from a GPX source keeps everything: the verbatim parts are
-// the same bytes, and the model is the same.
+// GPX written from a GPX source is the source file, byte for byte.
 func TestGPXRoundTripUnchanged(t *testing.T) {
 	for _, f := range []string{"garmin-connect.gpx", "strava.gpx", "hike-plan.gpx"} {
 		t.Run(f, func(t *testing.T) {
+			raw := readFile(t, "testdata/good/"+f)
 			src := load(t, "testdata/good/"+f)
-			out := writeTo(t, src, "gpx")
 			if ls := LossReport(src, "gpx"); len(ls) != 0 {
 				t.Errorf("GPX to GPX reports losses: %+v", ls)
 			}
-			if !reflect.DeepEqual(shapes(src), shapes(out)) {
-				t.Error("positions, times or names changed")
+			var buf bytes.Buffer
+			if err := WriteGPX(src, &buf); err != nil {
+				t.Fatal(err)
 			}
-			a, b := src.gpx, out.gpx
-			if a.rootAttrs != b.rootAttrs || !bytes.Equal(a.meta, b.meta) || !bytes.Equal(a.ext, b.ext) {
-				t.Errorf("root, metadata or extensions changed:\n%q\n%q", a.rootAttrs, b.rootAttrs)
-			}
-			sp, op := src.Placemarks(), out.Placemarks()
-			if len(sp) != len(op) {
-				t.Fatalf("%d placemarks, then %d", len(sp), len(op))
-			}
-			for i := range sp {
-				if !reflect.DeepEqual(sp[i].Fields, op[i].Fields) || sp[i].Description != op[i].Description || sp[i].TimeStamp != op[i].TimeStamp {
-					t.Errorf("placemark %d details changed", i)
-				}
-				if !bytes.Equal(sp[i].gpx.head, op[i].gpx.head) || !reflect.DeepEqual(sp[i].gpx.segTails, op[i].gpx.segTails) {
-					t.Errorf("placemark %d verbatim parts changed", i)
-				}
-				if sp[i].Geometry == nil {
-					continue
-				}
-				sl, ol := sp[i].Geometry.leaves(), op[i].Geometry.leaves()
-				for j := range sl {
-					if !reflect.DeepEqual(sl[j].ptRaw, ol[j].ptRaw) {
-						t.Errorf("placemark %d segment %d point details changed", i, j)
-					}
-				}
-			}
-			if !reflect.DeepEqual(codesOf(Inspect(src)), codesOf(Inspect(out))) {
-				t.Errorf("issues changed: %v then %v", sortedCodes(codesOf(Inspect(src))), sortedCodes(codesOf(Inspect(out))))
-			}
-			// A second pass gives the same bytes.
-			var b1, b2 bytes.Buffer
-			WriteGPX(src, &b1)
-			WriteGPX(out, &b2)
-			if !bytes.Equal(b1.Bytes(), b2.Bytes()) {
-				t.Error("GPX output is not stable")
+			if !bytes.Equal(buf.Bytes(), raw) {
+				t.Error("GPX output differs from the source file")
 			}
 		})
+	}
+}
+
+// Attributes, namespace declarations on inner elements, a prefixed root,
+// comments and empty segments all survive GPX to GPX, also after clean
+// swaps a point.
+func TestGPXKeepsEverything(t *testing.T) {
+	src := `<?xml version="1.0"?>
+<!-- exported by a test -->
+<g:gpx xmlns:g="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">
+  <g:wpt lat="45.5" lon="9.2" xmlns:x="urn:x" x:id="7"><g:name>A</g:name></g:wpt>
+  <g:trk><g:name>T</g:name>
+    <g:trkseg/>
+    <g:trkseg>
+      <g:trkpt lat='10.1' lon="20.2" x:a="1" xmlns:x="urn:x"><g:time>2026-05-01T07:00:00Z</g:time></g:trkpt>
+      <!-- a note -->
+      <g:trkpt lat="85" lon="10"><g:time>2026-05-01T07:01:00Z</g:time></g:trkpt>
+    </g:trkseg>
+  </g:trk>
+</g:gpx>
+`
+	d, err := Open("x.gpx", []byte(src))
+	if err != nil || !d.Readable() {
+		t.Fatalf("open: %v %+v", err, Inspect(d).Issues)
+	}
+	if n := len(d.Placemarks()); n != 2 {
+		t.Fatalf("%d placemarks", n)
+	}
+	var buf bytes.Buffer
+	WriteGPX(d, &buf)
+	if buf.String() != src {
+		t.Errorf("GPX output changed the file:\n%s", buf.String())
+	}
+	// Swap the second point by hand, as clean does, and only its values change.
+	pm := d.Placemarks()[1]
+	l := pm.Geometry.leaves()[0]
+	l.Coords[1] = Coord{Lon: 85, Lat: 10}
+	buf.Reset()
+	WriteGPX(d, &buf)
+	want := strings.Replace(src, `lat="85" lon="10"`, `lat="10" lon="85"`, 1)
+	if buf.String() != want {
+		t.Errorf("swap splice wrong:\n%s", buf.String())
+	}
+}
+
+// GPX 1.0 keeps the file's name, time and bounds under the root; they are
+// metadata, not unknown elements, and conversions report them.
+func TestGPX10Metadata(t *testing.T) {
+	src := `<gpx xmlns="http://www.topografix.com/GPX/1/0" version="1.0" creator="t">
+<name>Old</name><time>2004-01-01T00:00:00Z</time><bounds minlat="1" minlon="1" maxlat="2" maxlon="2"/>
+<wpt lat="1.5" lon="1.5"><name>P</name><url>http://x</url><urlname>x</urlname></wpt>
+</gpx>`
+	d, err := Open("o.gpx", []byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := codesOf(Inspect(d))["unknown-element"]; ok {
+		t.Error("GPX 1.0 root elements reported as unknown")
+	}
+	ls := lossByWhat(LossReport(d, "geojson"))
+	if l := ls["Metadata"]; l.Outcome != "lost" || !reflect.DeepEqual(l.Items, []string{"bounds", "name", "time"}) {
+		t.Errorf("metadata loss: %+v", l)
+	}
+	if l, ok := ls["Other waypoint, route and track details"]; !ok || l.Count != 2 {
+		t.Errorf("url and urlname not reported: %+v", ls)
 	}
 }
 
@@ -134,10 +177,10 @@ func TestGPXExportsThroughOtherFormats(t *testing.T) {
 	cases := map[string]want{
 		"garmin-connect.gpx": {ext: []string{"atemp (40)", "cad (40)", "hr (40)"}, extCount: 40, meta: []string{"link", "time"}, fields: 1},
 		"strava.gpx":         {ext: []string{"cad (60)", "hr (60)", "power (60)"}, extCount: 60, meta: []string{"time"}, fields: 1},
-		"hike-plan.gpx": {meta: []string{"name", "author"}, fields: 6, other: map[string]int{
+		"hike-plan.gpx": {meta: []string{"author", "name"}, fields: 6, other: map[string]int{
 			"Other track point details": 2, "Route point details": 4,
 			"Extensions on the file, waypoints, routes, tracks and segments": 2,
-			"Other waypoint details": 2, "Tracks with several segments": 1}},
+			"Other waypoint, route and track details":                        3, "Tracks with several segments": 1}},
 	}
 	for f, w := range cases {
 		for _, target := range []string{"geojson", "kml"} {
@@ -286,7 +329,9 @@ func TestGPXCleanSwapped(t *testing.T) {
 	if got := pm.Geometry.Coords[0]; got.Lat != 32.08 || got.Lon != 134.78 {
 		t.Errorf("coords %+v", got)
 	}
-	if !bytes.Contains(pm.Geometry.ptRaw[0], []byte("<hr>90</hr>")) {
-		t.Error("point details lost in clean")
+	var buf bytes.Buffer
+	WriteGPX(c, &buf)
+	if !strings.Contains(buf.String(), `<trkpt lat="32.08" lon="134.78"><ele>5</ele><extensions><hr>90</hr></extensions></trkpt>`) {
+		t.Errorf("point details lost in clean:\n%s", buf.String())
 	}
 }

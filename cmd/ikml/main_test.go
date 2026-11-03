@@ -240,6 +240,54 @@ func TestCheckDir(t *testing.T) {
 	}
 }
 
+// GeoJSON with a byte order mark and broken JSON are checked, not skipped;
+// an unreadable folder is reported and the walk goes on; a symlinked folder
+// argument is followed; an empty folder says so.
+func TestCheckDirEdges(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) {
+		p := filepath.Join(dir, name)
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("a/bom.json", "\xEF\xBB\xBF"+`{"type":"FeatureCollection","features":[]}`)
+	write("a/broken.geojson.json", `{"type":"FeatureCollection","features":[`)
+	write("a/list.json", `[1,2,3]`)
+	code, out, errs := runCLI("check", dir, "--json")
+	var r batchJSON
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if r.Totals.Files != 2 || r.Totals.Skipped != 1 || code != 1 {
+		t.Errorf("exit %d, totals %+v (%s)", code, r.Totals, errs)
+	}
+	if os.Getuid() != 0 {
+		write("locked/x.kml", "<kml/>")
+		os.Chmod(filepath.Join(dir, "locked"), 0)
+		defer os.Chmod(filepath.Join(dir, "locked"), 0o755)
+		code, out, _ = runCLI("check", dir, "--json")
+		json.Unmarshal([]byte(out), &r)
+		if code != 1 || r.Totals.Unreadable < 2 || r.Totals.Files != 3 {
+			t.Errorf("unreadable folder: exit %d, totals %+v", code, r.Totals)
+		}
+		os.Chmod(filepath.Join(dir, "locked"), 0o755)
+	}
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(filepath.Join(dir, "a"), link); err == nil {
+		_, out, _ = runCLI("check", link, "--json")
+		json.Unmarshal([]byte(out), &r)
+		if r.Totals.Files != 2 || !strings.HasPrefix(r.Files[0].File, filepath.ToSlash(link)+"/") {
+			t.Errorf("symlinked folder: %+v", r)
+		}
+	}
+	empty := t.TempDir()
+	if code, _, errs := runCLI("check", empty); code != 0 || !strings.Contains(errs, "no map files") {
+		t.Errorf("empty folder: %d %q", code, errs)
+	}
+}
+
 func TestConvertGPXAndCSV(t *testing.T) {
 	dir := t.TempDir()
 	out := filepath.Join(dir, "ride.geojson")

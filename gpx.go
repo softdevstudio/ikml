@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,11 +23,11 @@ const (
 // gpxInfo keeps what a GPX file holds beyond the shared model: the parts
 // GPX output copies verbatim, and the counts the loss reports need.
 type gpxInfo struct {
-	raw       []byte // the file as UTF-8
-	version   string
-	rootAttrs string // the root start tag's attributes, verbatim
-	meta      []byte // the metadata element, verbatim
-	ext       []byte // the root extensions element, verbatim
+	raw     []byte // the file as UTF-8; GPX output is this file, with fixed coordinates spliced in
+	version string
+	meta    bool // the file has metadata (GPX 1.1 <metadata>, or GPX 1.0's name, author, time and the like)
+	ext     bool // the root has <extensions>
+	unknown int  // root children that aren't GPX
 
 	metaNames   []string
 	ptExt       map[string]int // element names inside point extensions, by points carrying them
@@ -34,17 +35,34 @@ type gpxInfo struct {
 	ptOther     map[string]int // other per-point children of track points
 	rteDetail   map[string]int // route point children other than ele
 	featExt     int            // waypoints, routes and tracks with extensions
-	wptOther    map[string]int // waypoint children with no place in the model
+	featOther   map[string]int // waypoint, route and track children with no place in the model
 	partial     int            // segments where only some points have a time
 	segmented   int            // tracks with more than one segment
 	badPoints   int            // points dropped for unreadable lat/lon
 }
 
-// gpxFeature is the verbatim part of one wpt, rte or trk.
-type gpxFeature struct {
-	kind       string // wpt, rte, trk
-	head, tail []byte // inner content before the first point or segment, and after the last
-	segTails   [][]byte
+// gpx10Meta are the GPX 1.0 root children that GPX 1.1 moved into <metadata>.
+var gpx10Meta = map[string]bool{"name": true, "desc": true, "author": true, "email": true, "url": true, "urlname": true, "time": true, "keywords": true, "bounds": true}
+
+// latLonRe finds the lat and lon attribute values in a start tag.
+var latLonRe = regexp.MustCompile(`\b(lat|lon)\s*=\s*(?:"([^"]*)"|'([^']*)')`)
+
+// coordSpans returns the byte ranges of the lat and lon values in the start
+// tag at raw[start:end], as offsets into raw.
+func coordSpans(raw []byte, start, end int) [2][2]int {
+	var out [2][2]int
+	for _, m := range latLonRe.FindAllSubmatchIndex(raw[start:end], -1) {
+		vs, ve := m[4], m[5]
+		if vs < 0 {
+			vs, ve = m[6], m[7]
+		}
+		i := 0
+		if string(raw[start+m[2]:start+m[3]]) == "lon" {
+			i = 1
+		}
+		out[i] = [2]int{start + vs, start + ve}
+	}
+	return out
 }
 
 // isGPX reports whether XML data has a gpx root element.
@@ -55,7 +73,7 @@ func isGPX(data []byte) bool {
 	}
 	dec := xml.NewDecoder(bytes.NewReader(raw))
 	dec.Strict = false
-	for i := 0; i < 64; i++ {
+	for i := 0; i < 10000; i++ {
 		t, err := dec.Token()
 		if err != nil {
 			return false
@@ -99,7 +117,7 @@ func openGPX(d *Doc, data []byte) {
 		d.encoding = enc
 		d.issues.add("encoding-converted", Loc{Line: 1}, 0, "The file is encoded as %s. iKML converted it to UTF-8; cleaned output is UTF-8.", enc)
 	}
-	info := &gpxInfo{raw: raw, ptExt: map[string]int{}, ptOther: map[string]int{}, rteDetail: map[string]int{}, wptOther: map[string]int{}}
+	info := &gpxInfo{raw: raw, ptExt: map[string]int{}, ptOther: map[string]int{}, rteDetail: map[string]int{}, featOther: map[string]int{}}
 	d.gpx = info
 	p := &gpxp{d: d, raw: raw, dec: xml.NewDecoder(bytes.NewReader(raw)), info: info, n: map[string]int{}}
 	if err := p.parse(); err != nil {
@@ -130,12 +148,7 @@ func (p *gpxp) parse() error {
 		if !ok {
 			continue
 		}
-		end := int(p.dec.InputOffset())
-		tag := string(p.raw[off:end])
-		name := "<" + rawName(tag)
-		attrs := strings.TrimPrefix(tag, name)
-		attrs = strings.TrimSuffix(strings.TrimSuffix(attrs, ">"), "/")
-		p.info.rootAttrs = strings.TrimSpace(attrs)
+		_ = off
 		p.d.Namespace = se.Name.Space
 		for _, a := range se.Attr {
 			if a.Name.Local == "version" && a.Name.Space == "" {
@@ -173,18 +186,25 @@ func (p *gpxp) parse() error {
 				if err != nil {
 					return err
 				}
-				b := p.raw[off:int(p.dec.InputOffset())]
 				if v.Name.Local == "metadata" {
-					p.info.meta = b
-					p.info.metaNames = names
+					p.info.meta = true
+					p.info.metaNames = append(p.info.metaNames, names...)
 				} else {
-					p.info.ext = b
+					p.info.ext = true
 				}
 			default:
 				if err := p.dec.Skip(); err != nil {
 					return err
 				}
-				p.d.issues.add("unknown-element", Loc{Path: "/gpx", Line: p.line()}, 0, "<%s> is not part of GPX. iKML leaves it out of GPX output and conversions.", v.Name.Local)
+				if gpx10Meta[v.Name.Local] {
+					// GPX 1.0 keeps the file's name, author, time and the
+					// like directly under the root.
+					p.info.meta = true
+					p.info.metaNames = append(p.info.metaNames, v.Name.Local)
+					continue
+				}
+				p.info.unknown++
+				p.d.issues.add("unknown-element", Loc{Path: "/gpx", Line: p.line()}, 0, "<%s> is not part of GPX. iKML keeps it in GPX output and leaves it out of conversions.", v.Name.Local)
 			}
 		}
 	}
@@ -305,10 +325,7 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 	path := fmt.Sprintf("/gpx/%s[%d]", kind, p.n[kind])
 	line := p.line()
 	pm := &Placemark{Path: path, Line: line}
-	f := &gpxFeature{kind: kind}
-	pm.gpx = f
 	innerStart := int(p.dec.InputOffset())
-	firstPoint, lastPoint := -1, -1
 	var segs []*Geometry
 	var wptCoord Coord
 	wptOK := false
@@ -333,20 +350,14 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 		}
 		switch v := t.(type) {
 		case xml.EndElement:
-			end := off
-			if firstPoint < 0 {
-				f.head = p.raw[innerStart:end]
-			} else {
-				f.head = p.raw[innerStart:firstPoint]
-				f.tail = p.raw[lastPoint:end]
-			}
 			if hasExt {
 				p.info.featExt++
 			}
 			switch kind {
 			case "wpt":
 				if wptOK {
-					pm.Geometry = &Geometry{Type: "Point", Coords: []Coord{wptCoord}, Line: line}
+					pm.Geometry = &Geometry{Type: "Point", Coords: []Coord{wptCoord}, Line: line,
+						ptSpan: [][2][2]int{coordSpans(p.raw, start, innerStart)}, ptOrig: []Coord{wptCoord}}
 				}
 			case "rte":
 				if len(rte.Coords) > 0 {
@@ -368,25 +379,16 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 			name := v.Name.Local
 			switch {
 			case kind == "rte" && name == "rtept":
-				if firstPoint < 0 {
-					firstPoint = off
-				}
-				if err := p.point(v, pm, rte, true); err != nil {
+				if err := p.point(v, off, pm, rte, true); err != nil {
 					return err
 				}
-				lastPoint = int(p.dec.InputOffset())
 			case kind == "trk" && name == "trkseg":
-				if firstPoint < 0 {
-					firstPoint = off
-				}
-				seg, tail, err := p.segment(pm, len(segs)+1)
+				seg, err := p.segment(pm, len(segs)+1)
 				if err != nil {
 					return err
 				}
-				lastPoint = int(p.dec.InputOffset())
 				if seg != nil {
 					segs = append(segs, seg)
-					f.segTails = append(f.segTails, tail)
 				}
 			case name == "name":
 				s, err := p.text()
@@ -432,8 +434,12 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 						href = a.Value
 					}
 				}
-				if _, err := p.text(); err != nil {
+				names, err := p.skipNames()
+				if err != nil {
 					return err
+				}
+				for _, n := range names {
+					p.info.featOther["link "+n]++ // link text and type
 				}
 				if href != "" {
 					pm.Fields = append(pm.Fields, Field{Name: "link", Value: href, Source: "gpx"})
@@ -444,9 +450,7 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 					return err
 				}
 			default:
-				if kind == "wpt" {
-					p.info.wptOther[name]++
-				}
+				p.info.featOther[name]++
 				if err := p.dec.Skip(); err != nil {
 					return err
 				}
@@ -456,19 +460,17 @@ func (p *gpxp) feature(se xml.StartElement, start int) error {
 }
 
 // segment reads one trkseg. It returns nil for a segment with no points.
-func (p *gpxp) segment(pm *Placemark, n int) (*Geometry, []byte, error) {
+func (p *gpxp) segment(pm *Placemark, n int) (*Geometry, error) {
 	g := &Geometry{Type: "Track", Line: p.line()}
-	lastPoint := int(p.dec.InputOffset())
 	for {
 		t, off, err := p.next()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		switch v := t.(type) {
 		case xml.EndElement:
-			tail := p.raw[lastPoint:off]
 			if len(g.Coords) == 0 {
-				return nil, nil, nil
+				return nil, nil
 			}
 			timed := 0
 			for _, w := range g.When {
@@ -476,62 +478,62 @@ func (p *gpxp) segment(pm *Placemark, n int) (*Geometry, []byte, error) {
 					timed++
 				}
 			}
+			// The times that are there are checked, also in a segment
+			// where only some points have one.
 			loc := Loc{Path: fmt.Sprintf("%s/trkseg[%d]", pm.Path, n), Line: g.Line}
-			switch {
-			case timed == len(g.When):
-				backwards, invalid := 0, 0
-				var prev time.Time
-				for i, w := range g.When {
-					tm, e := time.Parse(time.RFC3339Nano, w)
-					if e != nil {
-						invalid++
-						continue
-					}
-					if i > 0 && !prev.IsZero() && tm.Before(prev) {
-						backwards++
-					}
-					prev = tm
+			backwards, invalid := 0, 0
+			var prev time.Time
+			for _, w := range g.When {
+				if w == "" {
+					continue
 				}
-				if invalid > 0 {
-					p.d.issues.add("gpx-time-invalid", loc, invalid, "%s in this segment %s not an RFC 3339 time such as 2026-05-01T07:30:00Z.", count(invalid, "time", "times"), plural(invalid, "is", "are"))
+				tm, e := time.Parse(time.RFC3339Nano, w)
+				if e != nil {
+					invalid++
+					continue
 				}
-				if backwards > 0 {
-					p.d.issues.add("gpx-time-backwards", loc, backwards, "%s in this segment %s earlier than the point before. Speeds and durations come out wrong.", count(backwards, "point", "points"), plural(backwards, "is", "are"))
+				if !prev.IsZero() && tm.Before(prev) {
+					backwards++
 				}
-			default:
+				prev = tm
+			}
+			if invalid > 0 {
+				p.d.issues.add("gpx-time-invalid", loc, invalid, "%s in this segment %s not an RFC 3339 time such as 2026-05-01T07:30:00Z.", count(invalid, "time", "times"), plural(invalid, "is", "are"))
+			}
+			if backwards > 0 {
+				p.d.issues.add("gpx-time-backwards", loc, backwards, "%s in this segment %s earlier than the point before. Speeds and durations come out wrong.", count(backwards, "point", "points"), plural(backwards, "is", "are"))
+			}
+			if timed != len(g.When) {
 				if timed > 0 {
 					p.info.partial++
 				}
 				g.Type = "LineString"
 				g.When = nil
 			}
-			return g, tail, nil
+			return g, nil
 		case xml.StartElement:
-			_ = off
 			if v.Name.Local != "trkpt" {
-				// The segment's own extensions come after its points and
-				// stay in the tail.
 				if v.Name.Local == "extensions" {
 					p.info.featExt++
 				}
 				if err := p.dec.Skip(); err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 				continue
 			}
-			if err := p.point(v, pm, g, false); err != nil {
-				return nil, nil, err
+			if err := p.point(v, off, pm, g, false); err != nil {
+				return nil, err
 			}
-			lastPoint = int(p.dec.InputOffset())
 		}
 	}
 }
 
 // point reads one rtept or trkpt into g, keeping its children verbatim.
-func (p *gpxp) point(se xml.StartElement, pm *Placemark, g *Geometry, route bool) error {
+func (p *gpxp) point(se xml.StartElement, start int, pm *Placemark, g *Geometry, route bool) error {
 	line := p.line()
 	c, why := latLon(se)
 	inner := int(p.dec.InputOffset())
+	spans := coordSpans(p.raw, start, inner)
 	when := ""
 	ext := map[string]bool{}
 	for {
@@ -546,9 +548,11 @@ func (p *gpxp) point(se xml.StartElement, pm *Placemark, g *Geometry, route bool
 				p.info.badPoints++
 				return nil
 			}
+			_ = off
 			g.Coords = append(g.Coords, c)
 			g.When = append(g.When, when)
-			g.ptRaw = append(g.ptRaw, p.raw[inner:off])
+			g.ptSpan = append(g.ptSpan, spans)
+			g.ptOrig = append(g.ptOrig, c)
 			if len(ext) > 0 {
 				p.info.ptExtPoints++
 				for k := range ext {
@@ -617,80 +621,43 @@ func WriteGPX(d *Doc, w io.Writer) error {
 	return bw.Flush()
 }
 
+// writeGPXSource writes the file as it was, with the coordinates that
+// clean changed spliced into their lat and lon attributes. Everything else,
+// namespaces, comments, attributes and extensions included, stays byte for
+// byte.
 func writeGPXSource(d *Doc, bw *bufio.Writer) {
-	g := d.gpx
-	bw.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	attrs := g.rootAttrs
-	if attrs == "" {
-		attrs = `version="1.1" creator="iKML" xmlns="` + NSGPX11 + `"`
-	}
-	bw.WriteString("<gpx " + attrs + ">\n")
-	if g.meta != nil {
-		bw.WriteString("  ")
-		bw.Write(g.meta)
-		bw.WriteString("\n")
-	}
+	raw := d.gpx.raw
+	var edits []edit
 	for _, pm := range d.Placemarks() {
-		f := pm.gpx
-		if f == nil {
+		if pm.Geometry == nil {
 			continue
 		}
-		switch f.kind {
-		case "wpt":
-			if pm.Geometry == nil || len(pm.Geometry.Coords) == 0 {
-				continue
-			}
-			c := pm.Geometry.Coords[0]
-			bw.WriteString(`  <wpt lat="` + formatFloat(c.Lat) + `" lon="` + formatFloat(c.Lon) + `">`)
-			bw.Write(f.head)
-			bw.WriteString("</wpt>\n")
-		case "rte":
-			bw.WriteString("  <rte>")
-			bw.Write(f.head)
-			if pm.Geometry != nil {
-				for i, c := range pm.Geometry.Coords {
-					writePoint(bw, "rtept", c, pm.Geometry.ptRaw[i])
+		for _, l := range pm.Geometry.leaves() {
+			for i, c := range l.Coords {
+				if i >= len(l.ptSpan) || i >= len(l.ptOrig) {
+					continue
+				}
+				o, sp := l.ptOrig[i], l.ptSpan[i]
+				if c.Lat != o.Lat && sp[0][1] > sp[0][0] {
+					edits = append(edits, edit{sp[0][0], sp[0][1], formatFloat(c.Lat)})
+				}
+				if c.Lon != o.Lon && sp[1][1] > sp[1][0] {
+					edits = append(edits, edit{sp[1][0], sp[1][1], formatFloat(c.Lon)})
 				}
 			}
-			bw.Write(f.tail)
-			bw.WriteString("</rte>\n")
-		case "trk":
-			bw.WriteString("  <trk>")
-			bw.Write(f.head)
-			var segs []*Geometry
-			if pm.Geometry != nil {
-				if pm.Geometry.Type == "MultiTrack" {
-					segs = pm.Geometry.Parts
-				} else {
-					segs = []*Geometry{pm.Geometry}
-				}
-			}
-			for i, s := range segs {
-				bw.WriteString("<trkseg>")
-				for j, c := range s.Coords {
-					writePoint(bw, "trkpt", c, s.ptRaw[j])
-				}
-				if i < len(f.segTails) {
-					bw.Write(f.segTails[i])
-				}
-				bw.WriteString("</trkseg>")
-			}
-			bw.Write(f.tail)
-			bw.WriteString("</trk>\n")
 		}
 	}
-	if g.ext != nil {
-		bw.WriteString("  ")
-		bw.Write(g.ext)
-		bw.WriteString("\n")
+	sort.Slice(edits, func(a, b int) bool { return edits[a].start < edits[b].start })
+	pos := 0
+	for _, e := range edits {
+		if e.start < pos {
+			continue
+		}
+		bw.Write(raw[pos:e.start])
+		bw.WriteString(e.text)
+		pos = e.end
 	}
-	bw.WriteString("</gpx>\n")
-}
-
-func writePoint(bw *bufio.Writer, tag string, c Coord, inner []byte) {
-	bw.WriteString("<" + tag + ` lat="` + formatFloat(c.Lat) + `" lon="` + formatFloat(c.Lon) + `">`)
-	bw.Write(inner)
-	bw.WriteString("</" + tag + ">")
+	bw.Write(raw[pos:])
 }
 
 // gpxText returns a placemark's name, description and timestamp, from
@@ -850,22 +817,28 @@ func lossFromGPX(d *Doc, target string) []Loss {
 		out = append(out, Loss{What: "Times in partly timed segments", Count: g.partial, Outcome: "lost",
 			Detail: "In these track segments only some points have a time. A track needs a time for every point, so the segment is written as a plain line without times."})
 	}
-	if g.meta != nil {
-		out = append(out, Loss{What: "Metadata", Count: 1, Outcome: "lost", Detail: "The file's <metadata> (author, copyright, links, time, bounds) is dropped.", Items: g.metaNames})
+	if g.meta {
+		out = append(out, Loss{What: "Metadata", Count: 1, Outcome: "lost", Detail: "The file's <metadata> (author, copyright, links, time, bounds) is dropped.", Items: uniqueSorted(g.metaNames)})
 	}
 	ext := g.featExt
-	if g.ext != nil {
+	if g.ext {
 		ext++
 	}
 	if ext > 0 {
 		out = append(out, Loss{What: "Extensions on the file, waypoints, routes, tracks and segments", Count: ext, Outcome: "lost", Detail: "<extensions> outside track points, such as a track's color in Garmin's extension, are dropped."})
 	}
-	if n := sum(g.wptOther); n > 0 {
-		out = append(out, Loss{What: "Other waypoint details", Count: n, Outcome: "lost",
-			Detail: "Waypoint elements such as magnetic variation, fix type, satellites and accuracy are dropped.", Items: firstN(counted(g.wptOther), 10)})
+	if n := sum(g.featOther); n > 0 {
+		out = append(out, Loss{What: "Other waypoint, route and track details", Count: n, Outcome: "lost",
+			Detail: "Elements such as magnetic variation, fix type, satellites and accuracy, and GPX 1.0's url and urlname, are dropped.", Items: firstN(counted(g.featOther), 10)})
+	}
+	if g.unknown > 0 {
+		out = append(out, Loss{What: "Elements outside GPX", Count: g.unknown, Outcome: "lost", Detail: "Elements under the root that aren't part of GPX are dropped."})
 	}
 	fields := 0
 	for _, pm := range d.Placemarks() {
+		if target == "csv" && (pm.Geometry == nil || pm.Geometry.Type != "Point") {
+			continue // only waypoints become rows
+		}
 		fields += len(pm.Fields)
 	}
 	if fields > 0 {
@@ -982,5 +955,18 @@ func lossToGPX(d *Doc) []Loss {
 	if moved > 0 {
 		out = append(out, Loss{What: "Order", Count: moved, Outcome: "changed", Detail: "GPX lists every waypoint before any track, so points that came after a line move up."})
 	}
+	return out
+}
+
+func uniqueSorted(in []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, s := range in {
+		if !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	sort.Strings(out)
 	return out
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -60,11 +61,16 @@ type batchJSON struct {
 func skipReason(path string, data []byte) string {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".json":
-		var top struct {
-			Type string `json:"type"`
-		}
-		if json.Unmarshal(data, &top) != nil || !geojsonTypes[top.Type] {
-			return "a JSON file that isn't GeoJSON"
+		// Only JSON that parses and names a type other than GeoJSON's is
+		// skipped. Broken JSON is checked, so its errors are reported.
+		body := bytes.TrimPrefix(data, []byte("\xEF\xBB\xBF"))
+		if json.Valid(body) {
+			var top struct {
+				Type string `json:"type"`
+			}
+			if json.Unmarshal(body, &top) != nil || !geojsonTypes[top.Type] {
+				return "a JSON file that isn't GeoJSON"
+			}
 		}
 	case ".csv":
 		d, err := ikml.Open(filepath.Base(path), data)
@@ -79,15 +85,34 @@ func skipReason(path string, data []byte) string {
 	return ""
 }
 
-// checkDir checks every map file under dir. Symbolic links are not followed.
+// checkDir checks every map file under dir. Symbolic links inside it are
+// not followed; dir itself may be one. A folder that can't be read is
+// reported as unreadable and the walk goes on.
 func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 	var paths []string
-	err := filepath.WalkDir(dir, func(p string, e fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	var unreadable []batchFile
+	root := dir
+	if real, err := filepath.EvalSymlinks(dir); err == nil {
+		root = real
+	}
+	err := filepath.WalkDir(root, func(p string, e fs.DirEntry, err error) error {
+		shown := p
+		if rel, rerr := filepath.Rel(root, p); rerr == nil {
+			shown = filepath.Join(dir, rel)
 		}
+		if err != nil {
+			if p == root {
+				return err
+			}
+			unreadable = append(unreadable, batchFile{File: filepath.ToSlash(shown), Error: err.Error(), Issues: []ikml.Issue{}})
+			if e != nil && e.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		p = shown
 		if e.IsDir() {
-			if p != dir && strings.HasPrefix(e.Name(), ".") {
+			if p != dir && filepath.Clean(p) != filepath.Clean(dir) && strings.HasPrefix(e.Name(), ".") {
 				return filepath.SkipDir
 			}
 			return nil
@@ -107,6 +132,8 @@ func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 	}
 	sort.Strings(paths)
 	out := batchJSON{Files: []batchFile{}, Skipped: []skipped{}}
+	out.Files = append(out.Files, unreadable...)
+	out.Totals.Unreadable += len(unreadable)
 	for _, p := range paths {
 		name := filepath.ToSlash(p)
 		data, err := readLimited(p)
@@ -163,6 +190,9 @@ func checkDir(dir string, o opts, stdout, stderr io.Writer) int {
 		}
 		t := out.Totals
 		fmt.Fprintf(stdout, "\n%d file(s) checked, %d skipped: %d error(s), %d warning(s), %d unreadable.\n", t.Files, t.Skipped, t.Errors, t.Warnings, t.Unreadable)
+	}
+	if out.Totals.Files == 0 {
+		fmt.Fprintf(stderr, "ikml: no map files (.kml .kmz .geojson .json .gpx .csv) found in %s\n", dir)
 	}
 	if failed {
 		return exitIssues

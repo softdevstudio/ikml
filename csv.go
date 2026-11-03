@@ -1,6 +1,7 @@
 package ikml
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/csv"
 	"errors"
@@ -16,14 +17,16 @@ type csvInfo struct {
 	header          []string
 	latCol, lonCol  int
 	delim           rune
-	decimalComma    bool
 	badRows, ragged int
+	raw             []byte // the file as read; CSV output is this file, with fixed rows rewritten
 }
 
 // csvRow is the source row behind one placemark of a CSV file.
 type csvRow struct {
-	values []string
-	orig   Coord
+	values     []string // as read, before padding a ragged row
+	orig       Coord
+	start, end int  // the record's bytes in csvInfo.raw, line ending included
+	comma      bool // the latitude was written with a decimal comma
 }
 
 var (
@@ -47,20 +50,31 @@ func csvHeader(data []byte) (header []string, delim rune, lat, lon int, ok bool)
 		first = first[:i]
 	}
 	first = bytes.TrimSuffix(first, []byte("\r"))
-	best := 0
+	// The delimiter that finds a latitude and a longitude column wins;
+	// among equals, the one giving the most columns.
+	best, bestCoords := 0, false
+	lat, lon = -1, -1
 	for _, d := range csvDelims {
 		r := csv.NewReader(bytes.NewReader(first))
 		r.Comma = d
 		r.LazyQuotes = true
 		rec, err := r.Read()
-		if err != nil || len(rec) <= best {
+		if err != nil || len(rec) < 2 {
 			continue
 		}
-		best, header, delim = len(rec), rec, d
+		la, lo := coordCols(rec)
+		coords := la >= 0 && lo >= 0
+		if (coords && !bestCoords) || (coords == bestCoords && len(rec) > best) {
+			best, bestCoords, header, delim, lat, lon = len(rec), coords, rec, d, la, lo
+		}
 	}
 	if best < 2 {
 		return nil, 0, -1, -1, false
 	}
+	return header, delim, lat, lon, true
+}
+
+func coordCols(header []string) (lat, lon int) {
 	lat, lon = -1, -1
 	for i, h := range header {
 		n := normHeader(h)
@@ -71,7 +85,7 @@ func csvHeader(data []byte) (header []string, delim rune, lat, lon int, ok bool)
 			lon = i
 		}
 	}
-	return header, delim, lat, lon, true
+	return lat, lon
 }
 
 // looksLikeCSV reports whether data, which is neither XML nor JSON, should
@@ -99,9 +113,16 @@ func csvNumber(s string, decimalComma bool) (float64, bool) {
 
 func openCSV(d *Doc, data []byte) {
 	d.Root = &Folder{Kind: "csv", Path: "/"}
-	data = bytes.TrimPrefix(data, []byte("\xEF\xBB\xBF"))
+	raw := data
+	bom := 0
+	if bytes.HasPrefix(data, []byte("\xEF\xBB\xBF")) {
+		bom = 3
+		data = data[3:]
+	}
 	header, delim, lat, lon, _ := csvHeader(data)
-	info := &csvInfo{header: header, delim: delim, latCol: lat, lonCol: lon, decimalComma: delim != ','}
+	info := &csvInfo{header: header, delim: delim, latCol: lat, lonCol: lon, raw: raw}
+	// A decimal comma is possible only when the comma isn't the delimiter.
+	commaOK := ',' != delim
 	d.csv = info
 	if lat < 0 || lon < 0 {
 		d.issues.add("csv-no-coordinates", Loc{Line: 1}, 0, "The header row (%s) has no latitude and longitude columns. Name them lat and lon (or latitude and longitude) so iKML can place the rows.", strings.Join(header, ", "))
@@ -145,10 +166,12 @@ func openCSV(d *Doc, data []byte) {
 		seen[r] = true
 	}
 	for {
+		start := bom + int(r.InputOffset())
 		rec, err := r.Read()
 		if err == io.EOF {
 			break
 		}
+		end := bom + int(r.InputOffset())
 		line, _ := r.FieldPos(0)
 		if err != nil {
 			var pe *csv.ParseError
@@ -162,6 +185,7 @@ func openCSV(d *Doc, data []byte) {
 		if len(rec) == 1 && strings.TrimSpace(rec[0]) == "" {
 			continue
 		}
+		orig := append([]string(nil), rec...)
 		if len(rec) != len(header) {
 			info.ragged++
 			d.issues.add("csv-ragged-row", Loc{Line: line}, 0, "Row at line %d has %d values; the header has %d columns.", line, len(rec), len(header))
@@ -170,8 +194,8 @@ func openCSV(d *Doc, data []byte) {
 			}
 			rec = rec[:len(header)]
 		}
-		la, okLat := csvNumber(rec[lat], info.decimalComma)
-		lo, okLon := csvNumber(rec[lon], info.decimalComma)
+		la, okLat := csvNumber(rec[lat], commaOK)
+		lo, okLon := csvNumber(rec[lon], commaOK)
 		if !okLat || !okLon {
 			info.badRows++
 			d.issues.add("csv-bad-row", Loc{Line: line}, 0, "Row at line %d has %s=%q and %s=%q, which aren't both numbers. It is left out.", line, header[lat], rec[lat], header[lon], rec[lon])
@@ -189,7 +213,7 @@ func openCSV(d *Doc, data []byte) {
 			case "time":
 				pm.TimeStamp = strings.TrimSpace(v)
 			case "ele":
-				if a, ok := csvNumber(v, info.decimalComma); ok {
+				if a, ok := csvNumber(v, commaOK); ok {
 					c.Alt, c.Has3 = a, true
 				} else if strings.TrimSpace(v) != "" {
 					pm.Fields = append(pm.Fields, Field{Name: header[i], Value: v, Source: "csv"})
@@ -199,9 +223,54 @@ func openCSV(d *Doc, data []byte) {
 			}
 		}
 		pm.Geometry = &Geometry{Type: "Point", Coords: []Coord{c}, Line: line}
-		pm.csv = &csvRow{values: rec, orig: c}
+		pm.csv = &csvRow{values: orig, orig: c, start: start, end: end,
+			comma: commaOK && strings.Contains(rec[lat], ",")}
 		d.Root.Items = append(d.Root.Items, Item{Placemark: pm})
 	}
+}
+
+// writeCSVSource writes a CSV source as it was, byte for byte, except for
+// the rows whose coordinates clean changed: those are written again in the
+// source's delimiter and line ending.
+func writeCSVSource(d *Doc, w io.Writer) error {
+	info := d.csv
+	bw := bufio.NewWriter(w)
+	pos := 0
+	for _, pm := range d.Placemarks() {
+		row := pm.csv
+		if row == nil || pm.Geometry == nil || len(pm.Geometry.Coords) == 0 {
+			continue
+		}
+		c := pm.Geometry.Coords[0]
+		if (c.Lat == row.orig.Lat && c.Lon == row.orig.Lon) || row.start < pos {
+			continue
+		}
+		vals := append([]string(nil), row.values...)
+		lat, lon := formatFloat(c.Lat), formatFloat(c.Lon)
+		if row.comma {
+			lat, lon = strings.Replace(lat, ".", ",", 1), strings.Replace(lon, ".", ",", 1)
+		}
+		if info.latCol < len(vals) {
+			vals[info.latCol] = lat
+		}
+		if info.lonCol < len(vals) {
+			vals[info.lonCol] = lon
+		}
+		var rec bytes.Buffer
+		cw := csv.NewWriter(&rec)
+		cw.Comma = info.delim
+		cw.Write(vals)
+		cw.Flush()
+		line := bytes.TrimSuffix(rec.Bytes(), []byte("\n"))
+		orig := info.raw[row.start:row.end]
+		ending := orig[len(bytes.TrimRight(orig, "\r\n")):]
+		bw.Write(info.raw[pos:row.start])
+		bw.Write(line)
+		bw.Write(ending)
+		pos = row.end
+	}
+	bw.Write(info.raw[pos:])
+	return bw.Flush()
 }
 
 // WriteCSV writes the points of d as CSV, one row per point. A CSV source
@@ -211,30 +280,10 @@ func WriteCSV(d *Doc, w io.Writer) error {
 	if d.fatal {
 		return ErrUnreadable
 	}
-	cw := csv.NewWriter(w)
 	if d.csv != nil {
-		info := d.csv
-		// The source's own delimiter, so decimal commas stay readable.
-		cw.Comma = info.delim
-		cw.Write(info.header)
-		for _, pm := range d.Placemarks() {
-			if pm.csv == nil || pm.Geometry == nil || len(pm.Geometry.Coords) == 0 {
-				continue
-			}
-			row := append([]string(nil), pm.csv.values...)
-			c := pm.Geometry.Coords[0]
-			if c.Lat != pm.csv.orig.Lat || c.Lon != pm.csv.orig.Lon {
-				lat, lon := formatFloat(c.Lat), formatFloat(c.Lon)
-				if info.decimalComma {
-					lat, lon = strings.Replace(lat, ".", ",", 1), strings.Replace(lon, ".", ",", 1)
-				}
-				row[info.latCol], row[info.lonCol] = lat, lon
-			}
-			cw.Write(row)
-		}
-		cw.Flush()
-		return cw.Error()
+		return writeCSVSource(d, w)
 	}
+	cw := csv.NewWriter(w)
 	type point struct {
 		c              Coord
 		name, desc, ts string
