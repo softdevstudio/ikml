@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.2.0 (2026-11-04)
+
+GPX and CSV, folder checks and a GitHub Action.
+
+- GPX 1.0 and 1.1 in and out. Waypoints become points, routes lines, and
+  each track one placemark with a timed track per segment. Comments,
+  sources, symbols, types and links become properties or ExtendedData.
+  GPX written from GPX is the source file byte for byte, so Garmin and
+  Strava heart rate, cadence, temperature and power stay. Converting to
+  GeoJSON, KML or KMZ reports by name what goes. KML and GeoJSON can be
+  written as GPX; polygons, fields and styles are reported lost.
+- CSV in and out: a header naming a latitude and a longitude column,
+  comma, semicolon or tab, decimal commas with semicolons and tabs. CSV
+  written from CSV is the source file byte for byte.
+- New codes: `gpx-time-invalid`, `gpx-time-backwards`, `gpx-version`,
+  `csv-no-coordinates`, `csv-bad-row`, `csv-ragged-row`.
+- `clean --fix-swapped` works on GPX and CSV and changes only the lat and
+  lon values it fixes. Other fixes don't apply to them: a GPS track's
+  repeated points are real readings.
+- `ikml check DIR [--json] [--strict]` checks every map file in a folder.
+  JSON that isn't GeoJSON and CSV without coordinate columns are listed as
+  skipped, folders that can't be read as unreadable.
+- `action.yml`: a GitHub Action that annotates each problem on its file
+  and line, writes a job summary and fails the check on errors.
+- The browser tool opens and writes GPX and CSV.
+- Go 1.26 or newer to build.
+
 ## 0.1.2 (2026-10-25)
 
 Fixes from the second independent review.
