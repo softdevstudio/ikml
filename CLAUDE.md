@@ -83,7 +83,7 @@ Known gaps, not planned yet:
 - No editing beyond the safe fixes in `clean`.
 - The browser preview has no base map, by design (no network requests).
 
-## iKML 0.2: the files people actually have (softdev-plan item 23, approved by YK 2026-11-04)
+## Done: iKML 0.2, the files people actually have (softdev-plan item 23, approved by YK 2026-11-04)
 
 What and why: the files people bring to a map tool are mostly GPX from a watch or an app and CSV from a spreadsheet, and iKML can open neither. Content and docs repos with map files have no CI gate. The site's copy of the browser tool can drift from the engine unnoticed.
 
@@ -115,8 +115,8 @@ Steps:
    Review round 1: blocker, GPX to GPX dropped attributes and namespace declarations on wpt/rte/trk/trkseg/trkpt while reporting nothing lost; fixed by writing GPX and CSV to their own format as the source bytes, with only the coordinates clean fixed spliced in (TestGPXKeepsEverything, TestCSVKeepsEverything). Should-fix, all fixed with tests: a prefixed root lost its namespace; GPX 1.0 root metadata was unknown-element and dropped, url, urlname and link text unreported; CSV to CSV dropped bad and ragged rows, BOM and CRLF while reporting nothing; check DIR skipped GeoJSON with a BOM and broken JSON, stopped at an unreadable folder, and checked nothing through a symlinked folder argument. Nits fixed: Action error text escaped, CSV delimiter picked by the coordinate columns, decimal comma per row, partly timed segments time-checked, isGPX looks further, GPX to CSV field count.
    Review round 2: no blockers. Should-fix, fixed with tests: clean could write a fix into data-lat=, d:lat= or a lat="..." inside another value (attributes now scanned one by one, prefixed lat/lon ignored when reading); CSV and GPX conversions didn't report rows or points left out, or ragged rows' extra values. Nits fixed: clean replaces only the CSV cells it fixes (CRLF in quoted cells kept), CR-only CSV gets a line-ending hint, /row[N] counts records, swapped-latlon wording for GPX and CSV, symlinked map files listed as skipped, "Other column values" names the column count.
 7. [x] 0.2.0 released by the workflow (commit 2cdba46, Release run 41738716829). All six assets match SHA256SUMS at the tag and at latest. The downloaded Linux binary prints 0.2.0; the Garmin Connect and Strava GPX fixtures round-trip GPX to GPX byte for byte, and through GeoJSON and KML back to GPX with every position, elevation and time equal, the loss report naming hr, cad, atemp and power with their counts. action-test download job green on 3 OS, pinned and latest (41738880630). Evidence in test/results/ikml-0.2.0-release.
-8. [ ] ikml.com post, pages and static/tool; softdevstudio.com note; softdev-plan item 23 done.
+8. [x] ikml.com post "iKML 0.2 Opens GPX and CSV Files and Checks Map Folders on Every Pull Request" with ikml-0-2-gpx.png (drawn as SVG from real 0.2.0 output, rendered and inspected), quick start (GPX, folders, the Action), reference (new codes, GPX and CSV losses, folder checks), about, inspector and download pages, static/tool from v0.2.0's ikml-web.zip (check-site-tool.sh passes; site abf384f, Cloudflare Pages succeeded; no local Hugo, front matter checked by script); softdevstudio.com note and listing (77cb63f); softdev-plan item 23 done with a log row (b36baaa).
 
 ## Next
 
-iKML 0.2 above is in progress.
+iKML 0.2.0 is released and softdev-plan item 23 is done. Nothing is in progress; what comes next is YK's call. Open owner question: the site repo is private, so the static/tool sync check runs from a session (scripts/check-site-tool.sh); a read token as a secret would let a workflow run it.
